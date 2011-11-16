@@ -84,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument('activity', nargs='+')
     parser.add_argument('-b', '--backlog')
     parser.add_argument('--debug', action='store_true', default=False)
-    parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=5.0)
+    parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=1.0)
 
     args = parser.parse_args()
 
@@ -108,19 +108,19 @@ if __name__ == "__main__":
         start = min(other_time, now)
         end = max(other_time, now)
 
-        model.update('activity', activity, start=start, end=end)
+        model.log('activity', activity, start=start, end=end)
     else:
         start = datetime.utcnow()
 
         running = True
 
-        model.update('activity', activity, start=start, end=datetime.utcnow())
+        model.log('activity', activity, start=start)
         while running:
             try:
-                model.update('activity', activity, datetime.utcnow())
+                model.update('activity', activity, frequency=args.frequency)
                 time.sleep(args.frequency)
             except KeyboardInterrupt:
-                model.update('activity', activity, datetime.utcnow())
+                model.update('activity', activity, frequency=args.frequency)
                 running = False
 
 

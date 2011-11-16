@@ -4,7 +4,7 @@ import uuid
 
 class Model(object):
 
-    CONTIGUITY_THRESHROLD = 10 # seconds
+    CONTIGUITY_THRESHOLD = 10 # seconds
 
     def __init__(self, host='localhost'):
         connection = pymongo.Connection(host)
@@ -15,7 +15,7 @@ class Model(object):
         criteria = {
             'session' : self.uuid,
             'timeline' : timeline,
-            'end' : { '$gt' : start - datetime.timedelta(seconds=self.CONTIGUITY_THRESHROLD), '$lte' : start },
+            'end' : { '$gt' : start - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD), '$lte' : start },
         }
         query = self.db.timelines.find(criteria)
         query = query.sort( 'end', -1)
@@ -27,7 +27,7 @@ class Model(object):
 
         return None
 
-    def update(self, timeline, activity, start=None, end=None):
+    def log(self, timeline, activity, start=None, end=None):
         if start is None:
             start = datetime.datetime.utcnow()
 
@@ -51,6 +51,12 @@ class Model(object):
                 start=start,
                 end=end)
             self.db.timelines.save(data)
+
+    def update(self, timeline, activity):
+        end = datetime.datetime.utcnow()
+        start = end - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD)
+        
+        self.log(timeline, activity, start=start, end=end)
         
 
 

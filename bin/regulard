@@ -28,15 +28,12 @@ class RegularDaemon(object):
         if window is None:
             logging.warn('active window is undefined')
         else:
-            end = datetime.datetime.utcnow()
-            start = end - datetime.timedelta(seconds=self.frequency)
-
             window_name = window.get_name()
             application = window.get_application()
             application_name = application.get_name()
 
-            self.model.update('application', application_name, start=start, end=end)
-            self.model.update('window', window_name, start=start, end=end)
+            self.model.update('application', application_name, frequency=self.frequency)
+            self.model.update('window', window_name, frequency=self.frequency)
 
             logging.debug('active application: %s' % application_name)
             logging.debug('active window: %s' % window_name)
