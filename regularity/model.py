@@ -27,13 +27,13 @@ class Model(object):
 
         return None
 
-    def update(self, table, task, frequency, time=None):
+    def update(self, table, activity, frequency, time=None):
         if time is None:
             time = datetime.datetime.utcnow()
 
         previous = self.previous(table, frequency, time=time)
 
-        if previous and previous['task'] == task:
+        if previous and previous['activity'] == activity:
             previous['end'] = time
             self.db[table].save(previous)
         else:
@@ -44,7 +44,7 @@ class Model(object):
 
             data = dict(
                 session=self.uuid,
-                task=task,
+                activity=activity,
                 start=start,
                 end=time)
             self.db[table].save(data)
@@ -55,6 +55,9 @@ class Model(object):
         
     def window(self, window_name, frequency, time=None):
         self.update('window', window_name, frequency, time=time)
+
+    def activity(self, activity_name, frequency, time=None):
+        self.update('activity', activity_name, frequency, time=time)
         
 
 

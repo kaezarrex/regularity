@@ -12,12 +12,20 @@ class RegularDaemon(object):
         self.frequency = frequency
         self.model = Model()
 
-    def update(self):
+        # do this once, for whatever reason it's empty the first time
+        self.window()
+
+    def window(self):
         screen = wnck.screen_get_default()
         window = screen.get_active_window()
 
+        return window
+
+    def update(self):
+        window = self.window()
+
         if window is None:
-            logging.info('active window is undefined')
+            logging.warn('active window is undefined')
         else:
             window_name = window.get_name()
 
@@ -27,8 +35,8 @@ class RegularDaemon(object):
             self.model.application(application_name, self.frequency)
             self.model.window(window_name, self.frequency)
 
-            logging.info('active application: %s' % application_name)
-            logging.info('active window: %s' % window_name)
+            logging.debug('active application: %s' % application_name)
+            logging.debug('active window: %s' % window_name)
 
         return True
 
