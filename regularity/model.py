@@ -4,20 +4,20 @@ import uuid
 
 class Model(object):
 
+    CONTIGUITY_THRESHROLD = 10 # seconds
+
     def __init__(self, host='localhost'):
         connection = pymongo.Connection(host)
         self.db = connection.regularity
         self.uuid = uuid.uuid4().hex
 
-    def previous(self, table, frequency, time=None):
-        if time is None:
-            time = datetime.datetime.utcnow()
-
+    def previous(self, timeline, start):
         criteria = {
             'session' : self.uuid,
-            'end' : { '$gt' : time - datetime.timedelta(seconds=2*frequency), '$lte' : time },
+            'timeline' : timeline,
+            'end' : { '$gt' : start - datetime.timedelta(seconds=self.CONTIGUITY_THRESHROLD), '$lte' : start },
         }
-        query = self.db[table].find(criteria)
+        query = self.db.timelines.find(criteria)
         query = query.sort( 'end', -1)
         query = query.limit(1)
         previous = tuple(query)
@@ -27,37 +27,30 @@ class Model(object):
 
         return None
 
-    def update(self, table, activity, frequency, time=None):
-        if time is None:
-            time = datetime.datetime.utcnow()
+    def update(self, timeline, activity, start=None, end=None):
+        if start is None:
+            start = datetime.datetime.utcnow()
 
-        previous = self.previous(table, frequency, time=time)
+        if end is None:
+            end = start
+
+        previous = self.previous(timeline, start)
+        #todo see if there are overlaps between this and a possible next
 
         if previous and previous['activity'] == activity:
-            previous['end'] = time
-            self.db[table].save(previous)
+            previous['end'] = start
+            self.db.timelines.save(previous)
         else:
             if previous:
                 start = previous['end']
-            else:
-                start = time - datetime.timedelta(seconds=frequency)
 
             data = dict(
                 session=self.uuid,
+                timeline=timeline,
                 activity=activity,
                 start=start,
-                end=time)
-            self.db[table].save(data)
-
-        
-    def application(self, application_name, frequency, time=None):
-        self.update('application', application_name, frequency, time=time)
-        
-    def window(self, window_name, frequency, time=None):
-        self.update('window', window_name, frequency, time=time)
-
-    def activity(self, activity_name, frequency, time=None):
-        self.update('activity', activity_name, frequency, time=time)
+                end=end)
+            self.db.timelines.save(data)
         
 
 

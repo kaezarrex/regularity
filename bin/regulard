@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import datetime
 import gtk
 import logging
 import wnck
@@ -27,13 +28,15 @@ class RegularDaemon(object):
         if window is None:
             logging.warn('active window is undefined')
         else:
-            window_name = window.get_name()
+            end = datetime.datetime.utcnow()
+            start = end - datetime.timedelta(seconds=self.frequency)
 
+            window_name = window.get_name()
             application = window.get_application()
             application_name = application.get_name()
 
-            self.model.application(application_name, self.frequency)
-            self.model.window(window_name, self.frequency)
+            self.model.update('application', application_name, start=start, end=end)
+            self.model.update('window', window_name, start=start, end=end)
 
             logging.debug('active application: %s' % application_name)
             logging.debug('active window: %s' % window_name)
