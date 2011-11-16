@@ -117,10 +117,10 @@ if __name__ == "__main__":
         model.log('activity', activity, start=start)
         while running:
             try:
-                model.update('activity', activity, frequency=args.frequency)
+                model.update('activity', activity)
                 time.sleep(args.frequency)
             except KeyboardInterrupt:
-                model.update('activity', activity, frequency=args.frequency)
+                model.update('activity', activity)
                 running = False
 
 
