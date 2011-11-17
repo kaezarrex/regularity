@@ -4,7 +4,11 @@ from datetime import datetime, timedelta
 import logging
 import re
 
-def parse_backlog_offset(offset):
+def parse_offset(offset):
+    '''Parse a string intended to define an offset from now.
+
+       @param offset : str, the offset from now'''
+
     match = re.match(r'([-+])(([0-9]+):)?([0-5][0-9])(:([0-5][0-9]))?', offset)
 
     if not match:
@@ -34,7 +38,11 @@ def parse_backlog_offset(offset):
 
     return datetime.utcnow() - delta_time
 
-def parse_backlog_time(time):
+def parse_time_of_day(time):
+    '''Parse a string intended to define a time of day, in 24 hour format
+
+       @time : str, the time of day'''
+
     match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])(:([0-5][0-9]))?', time)
 
     if not match:
@@ -61,15 +69,23 @@ def parse_backlog_time(time):
     utc_offset = datetime.utcnow() - datetime.now()
     return time + utc_offset
 
-def parse_backlog(backlog):
-    backlog = backlog.strip()
+def parse_time(time):
+    '''Parse a string intended to define a time. It can be specified as an
+       offset from now, or a time for TODAY. Offsets are defined as a + or -, 
+       then a minute, minute:second, or hour:minute:second time string. If 
+       is no + or -, then the string is parsed as a time. Times are specified 
+       as either hour:minute or hour:minute:second strings.
 
-    start = parse_backlog_offset(backlog)
+       @param time : str, a time string'''
+
+    time = time.strip()
+
+    start = parse_offset(time)
 
     if start:
         return start
 
-    return parse_backlog_time(backlog)
+    return parse_time_of_day(time)
 
 if __name__ == "__main__":
 
@@ -82,7 +98,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('activity', nargs='+')
-    parser.add_argument('-b', '--backlog')
+    parser.add_argument('-t', '--time')
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=1.0)
 
@@ -101,8 +117,8 @@ if __name__ == "__main__":
 
     activity = ' '.join(args.activity).lower()
 
-    if args.backlog:
-        other_time = parse_backlog(args.backlog)
+    if args.time:
+        other_time = parse_time(args.time)
         now = datetime.utcnow()
 
         start = min(other_time, now)
@@ -123,7 +139,3 @@ if __name__ == "__main__":
                 model.update('activity', activity)
                 running = False
 
-
-
-
-        
