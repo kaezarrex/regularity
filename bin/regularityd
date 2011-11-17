@@ -1,0 +1,87 @@
+#! /usr/bin/env python
+
+import datetime
+import gtk
+import logging
+import traceback
+import wnck
+
+from regularity.model import Model
+
+class RegularityDaemon(object):
+    
+    def __init__(self, frequency=5.0):
+        '''Create a RegularityDaemon, which logs to the database the active
+           window and application over time.
+           
+           @param frequency : float 
+               the frequency at which the daemon write to the database'''
+
+        self.frequency = frequency
+        self.model = Model()
+
+        # do this once, for whatever reason it's empty the first time
+        self.window()
+
+    def window(self):
+        '''Get the active window.'''
+
+        screen = wnck.screen_get_default()
+        window = screen.get_active_window()
+
+        return window
+
+    def update(self):
+        '''Store in the database the current active window and application.'''
+
+        try:
+            window = self.window()
+
+            if window is None:
+                logging.warn('active window is undefined')
+            else:
+                window_name = window.get_name()
+                application = window.get_application()
+                application_name = application.get_name()
+
+                self.model.update('application', application_name)
+                self.model.update('window', window_name)
+
+                logging.debug('active application: %s' % application_name)
+                logging.debug('active window: %s' % window_name)
+
+            return True
+        except Exception, e:
+            logging.critical(traceback.format_exc()) 
+            gtk.main_quit()
+
+    def main(self):
+        '''Start the main loop.'''
+
+        gtk.timeout_add(int(self.frequency) * 1000, self.update)
+        gtk.main()
+
+if __name__ == "__main__":
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--debug', action='store_true', default=False)
+    parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=5.0)
+
+    args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(
+            level=logging.DEBUG
+        )
+    else:
+        logging.basicConfig(
+            level=logging.INFO
+        )
+
+    regularityd = RegularityDaemon(frequency=args.frequency)
+    regularityd.main()
+
+
+    

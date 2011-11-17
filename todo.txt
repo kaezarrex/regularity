@@ -1,0 +1,3 @@
+
+give timelines an allow_overlaps flag
+more intuitive use of bm
