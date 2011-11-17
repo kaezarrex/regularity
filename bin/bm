@@ -7,7 +7,8 @@ import re
 def parse_offset(offset):
     '''Parse a string intended to define an offset from now.
 
-       @param offset : str, the offset from now'''
+       @param offset : str
+           the offset from now'''
 
     match = re.match(r'([-+])(([0-9]+):)?([0-5][0-9])(:([0-5][0-9]))?', offset)
 
@@ -41,7 +42,8 @@ def parse_offset(offset):
 def parse_time_of_day(time):
     '''Parse a string intended to define a time of day, in 24 hour format
 
-       @time : str, the time of day'''
+       @time : str
+           the time of day'''
 
     match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])(:([0-5][0-9]))?', time)
 
@@ -76,7 +78,8 @@ def parse_time(time):
        is no + or -, then the string is parsed as a time. Times are specified 
        as either hour:minute or hour:minute:second strings.
 
-       @param time : str, a time string'''
+       @param time : str
+           a string representing an offset or time of day'''
 
     time = time.strip()
 

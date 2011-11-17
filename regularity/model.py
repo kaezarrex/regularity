@@ -13,7 +13,8 @@ class Model(object):
     def __init__(self, host='localhost'):
         '''Create a connection to mongoDB
 
-           @param host : optional, str, the host of the mongoDB server'''
+           @param host : optional, str
+               the host of the mongoDB server'''
 
         connection = pymongo.Connection(host)
         self.db = connection.regularity
@@ -23,13 +24,18 @@ class Model(object):
         '''Return timeline events that overlap with the time denoted by start
            and end
            
-           @param timeline : str, the timeline to scan for overlapping activities
-           @param start : datetime, the start time of the activity
-           @param end : datetime, the end time of the activity
-           @param buffer : optional, int, the number of seconds to buffer out
-                           the time range, useful for catching events that 
-                           barely don't overlap, defaults to 5 seconds
-           @param kwargs : optional, additional criteria for the query'''
+           @param timeline : str
+               the timeline to scan for overlapping activities
+           @param start : datetime
+               the start time of the activity
+           @param end : datetime
+               the end time of the activity
+           @param buffer : optional, int
+               the number of seconds to buffer out
+               the time range, useful for catching events that 
+               barely don't overlap, defaults to 5 seconds
+           @param kwargs : optional
+               additional criteria for the query'''
 
         if buffer_ is None:
             buffer_ = self.CONTIGUITY_THRESHOLD
@@ -55,10 +61,14 @@ class Model(object):
         '''Union this activity with any activities on the same timeline that 
            overlap and are the same activity.
            
-           @param timeline : str, the timeline to scan for overlapping activities
-           @param activity : str, the name of the activity to match up
-           @param start : datetime, the start time of the activity
-           @param end : datetime, the end time of the activity'''
+           @param timeline : str
+               the timeline to scan for overlapping activities
+           @param activity : str
+               the name of the activity to match up
+           @param start : datetime
+               the start time of the activity
+           @param end : datetime
+               the end time of the activity'''
 
         extra_criteria = {
             'activity' : activity
@@ -87,10 +97,14 @@ class Model(object):
         '''Truncate all activities on the same timeline that overlap and are
            not the same activity.
            
-           @param timeline : str, the timeline to scan for overlapping activities
-           @param activity : str, the name of the activity to match up
-           @param start : datetime, the start time of the activity
-           @param end : datetime, the end time of the activity'''
+           @param timeline : str
+               the timeline to scan for overlapping activities
+           @param activity : str
+               the name of the activity to match up
+           @param start : datetime
+               the start time of the activity
+           @param end : datetime
+               the end time of the activity'''
 
         extra_criteria = {
             'activity' : { '$ne' : activity },
@@ -132,12 +146,14 @@ class Model(object):
     def log(self, timeline, activity, start=None, end=None):
         '''Log the occurence of an activity to the specified timeline.
 
-           @param timeline : str, name of the timeline
-           @param activity : str, name of the activity
-           @param start : optional, datetime, the start time of the activity,
-                          defaults to now
-           @param end : optional, datetime, the end time of the activity,
-                        defaults to start'''
+           @param timeline : str
+               name of the timeline
+           @param activity : str
+               name of the activity
+           @param start : optional, datetime
+               the start time of the activity, defaults to now
+           @param end : optional, datetime
+               the end time of the activity, defaults to start'''
 
         if start is None:
             start = datetime.datetime.utcnow()
@@ -152,8 +168,10 @@ class Model(object):
     def update(self, timeline, activity):
         '''Log the continuance of an ongoing activity to the specified timeline
 
-           @param timeline : str, the name of the timeline
-           @param activity : str, the name of the activity'''
+           @param timeline : str
+               the name of the timeline
+           @param activity : str
+               the name of the activity'''
 
         end = datetime.datetime.utcnow()
         start = end - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD)
