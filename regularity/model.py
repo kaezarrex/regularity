@@ -47,6 +47,7 @@ class Model(object):
             ]
         })
         query = self.db.events.find(criteria)
+        query = query.sort('end', 1)
         overlapping = tuple(query)
 
         return overlapping
@@ -69,13 +70,6 @@ class Model(object):
         }
         overlapping_activities = self.overlapping(timeline_name, start, end, **extra_criteria)
 
-        if overlapping_activities:
-            start = min(start, *(a['start'] for a in overlapping_activities))
-            end = max(end, *(a['end'] for a in overlapping_activities))
-
-            for a in overlapping_activities:
-                self.db.events.remove(a)
-
         data = dict(
             session=self.uuid,
             timeline=timeline_name,
@@ -83,6 +77,16 @@ class Model(object):
             start=start,
             end=end,
         )
+
+        if overlapping_activities:
+            # consolidate all the overlapping activities into one
+            # preserve the id of the first activity
+            data['_id'] = overlapping_activities[0]['_id']
+            data['start'] = min(start, *(a['start'] for a in overlapping_activities))
+            data['end'] = max(end, *(a['end'] for a in overlapping_activities))
+
+            for a in overlapping_activities:
+                self.db.events.remove(a)
 
         self.db.events.save(data)
         return data
