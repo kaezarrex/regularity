@@ -40,7 +40,7 @@ class Model(object):
 
         criteria = kwargs
         criteria.update({
-            'timeline_name' : timeline_name,
+            'timeline' : timeline_name,
             '$nor' : [
                 { 'start' : { '$gt' : end } },
                 { 'end' : { '$lt' : start } },
@@ -78,7 +78,7 @@ class Model(object):
 
         data = dict(
             session=self.uuid,
-            timeline_name=timeline_name,
+            timeline=timeline_name,
             activity=activity,
             start=start,
             end=end,
@@ -120,14 +120,14 @@ class Model(object):
                 # split the activity into two
                 activity1 = dict(
                     session=self.uuid,
-                    timeline_name=timeline_name,
+                    timeline=timeline_name,
                     activity=a['activity'],
                     start=a['start'],
                     end=start
                 )
                 activity2 = dict(
                     session=self.uuid,
-                    timeline_name=timeline_name,
+                    timeline=timeline_name,
                     activity=a['activity'],
                     start=end,
                     end=a['end'],
