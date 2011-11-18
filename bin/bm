@@ -10,7 +10,7 @@ def parse_offset(offset):
        @param offset : str
            the offset from now'''
 
-    match = re.match(r'([-+])(([0-9]+):)?([0-5][0-9])(:([0-5][0-9]))?', offset)
+    match = re.match(r'([-+])(([0-9]+):)?([0-5][0-9])(:([0-5][0-9]))?$', offset)
 
     if not match:
         return None
@@ -45,8 +45,7 @@ def parse_time_of_day(time):
        @time : str
            the time of day'''
 
-    match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])(:([0-5][0-9]))?', time)
-
+    match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])(:([0-5][0-9]))?$', time)
     if not match:
         return None
 
@@ -67,6 +66,10 @@ def parse_time_of_day(time):
     if seconds is not None:
         seconds = int(seconds)
         time = time.replace(second=seconds)
+    else:
+        time = time.replace(second=0)
+
+    time = time.replace(microsecond=0)
 
     utc_offset = datetime.utcnow() - datetime.now()
     return time + utc_offset
@@ -83,16 +86,39 @@ def parse_time(time):
 
     time = time.strip()
 
-    start = parse_offset(time)
+    _time = parse_offset(time)
+    if _time:
+        return _time
 
-    if start:
-        return start
+    _time = parse_time_of_day(time)
+    if _time:
+        return _time
 
-    return parse_time_of_day(time)
+    return None
+
+def parse_activity(activity):
+    '''Parse a list of strings intended to define a time. The list can contain
+       times anywhere, and they will be extracted and return separately.
+
+       @param activity : a list of strings taken from the command line'''
+
+    # parse all the strings to see if they represent times
+    times = tuple(parse_time(s) for s in activity)
+
+    # extract the strings which do not represent times
+    is_activity = tuple(not bool(b) for b in times)
+    activity = compress(activity, is_activity)
+    activity = ' '.join(activity).lower()
+
+    # remove the None times from the times list
+    times = tuple(compress(times, times))
+
+    return activity, times
 
 if __name__ == "__main__":
 
     import argparse
+    from itertools import compress
     import time
 
     import sys
@@ -101,7 +127,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('activity', nargs='+')
-    parser.add_argument('-t', '--time')
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=1.0)
 
@@ -118,22 +143,27 @@ if __name__ == "__main__":
 
     model = Model()
 
-    activity = ' '.join(args.activity).lower()
+    activity, times = parse_activity(args.activity)
 
-    if args.time:
-        other_time = parse_time(args.time)
-        now = datetime.utcnow()
+    if len(times) > 2:
+        print 'at most two times can be supplied'
+        sys.exit(1)
 
-        start = min(other_time, now)
-        end = max(other_time, now)
+    now = datetime.utcnow()
+    if times:
+        
+        if 1 == len(times):
+            start = min(now, *times)
+            end = max(now, *times)
+        else:
+            start = min(*times)
+            end = max(*times)
 
         model.log('activity', activity, start=start, end=end)
     else:
-        start = datetime.utcnow()
-
         running = True
 
-        model.log('activity', activity, start=start)
+        model.log('activity', activity, start=now)
         while running:
             try:
                 model.update('activity', activity)
