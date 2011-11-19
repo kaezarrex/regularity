@@ -4,40 +4,58 @@ from datetime import datetime, timedelta
 import logging
 import re
 
+
+def offset_minute_seconds(offset):
+    '''Parse an offset string to see if it describes a minute:second offset.
+
+       @param offset : str
+           the offset string'''
+
+    match = re.match(r'^([-+][0-5]?[0-9])(:([0-5][0-9]))?$', offset)
+
+    if match:
+        minutes = int(match.group(1))
+        seconds = match.group(3)
+
+        if seconds:
+            seconds = int(seconds)
+        else:
+            seconds = 0
+
+        return 60 * minutes + seconds
+
+    return None
+
+def offset_hour_minute_seconds(offset):
+    '''Parse an offset string to see if it describes a hour:minute:second 
+       offset.
+
+       @param offset : str
+           the offset string'''
+
+    match = re.match(r'^([-+][0-9]+):([0-5][0-9]):([0-5][0-9])$', offset)
+
+    if match:
+        return 3600 * int(match.group(1)) + 60 * int(match.group(2)) + int(match.group(3))
+
+
+    return None
+
 def parse_offset(offset):
     '''Parse a string intended to define an offset from now.
 
        @param offset : str
            the offset from now'''
 
-    match = re.match(r'([-+])(([0-9]+):)?([0-5][0-9])(:([0-5][0-9]))?$', offset)
+    seconds = offset_minute_seconds(offset)
+    if not seconds:
+        seconds = offset_hour_minute_seconds(offset)
 
-    if not match:
-        return None
-        
-    offset = match.group(1)
+    if seconds:
+        delta_time = timedelta(seconds=seconds)
+        return datetime.utcnow() - delta_time
 
-    pos1 = match.group(3)
-    pos2 = match.group(4)
-    pos3 = match.group(6)
-
-    times = (pos1, pos2, pos3)
-    times = tuple(int(t) for t in times if t is not None)
-
-
-    if 3 == len(times):
-        total_seconds = 3600 * times[0] + 60 * times[1] + times[2]
-    elif 2 == len(times):
-        total_seconds = 60 * times[0] + times[1]
-    else:
-        total_seconds = 60 * times[0]
-
-
-    delta_time = timedelta(seconds=total_seconds)
-    if '+' == offset:
-        return datetime.utcnow() + delta_time
-
-    return datetime.utcnow() - delta_time
+    return None
 
 def parse_time_of_day(time):
     '''Parse a string intended to define a time of day, in 24 hour format
@@ -46,33 +64,32 @@ def parse_time_of_day(time):
            the time of day'''
 
     match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])(:([0-5][0-9]))?$', time)
-    if not match:
-        return None
+    if match:
+        hours = match.group(1)
+        minutes = match.group(2)
+        seconds = match.group(4)
 
-    hours = match.group(1)
-    minutes = match.group(2)
-    seconds = match.group(4)
+        time = datetime.now()
+        time = time.replace(microsecond=0)
 
-    time = datetime.now()
+        if hours is not None:
+            hours = int(hours)
+            time = time.replace(hour=hours)
 
-    if hours is not None:
-        hours = int(hours)
-        time = time.replace(hour=hours)
+        if minutes is not None:
+            minutes = int(minutes)
+            time = time.replace(minute=minutes)
 
-    if minutes is not None:
-        minutes = int(minutes)
-        time = time.replace(minute=minutes)
+        if seconds is not None:
+            seconds = int(seconds)
+            time = time.replace(second=seconds)
+        else:
+            time = time.replace(second=0)
 
-    if seconds is not None:
-        seconds = int(seconds)
-        time = time.replace(second=seconds)
-    else:
-        time = time.replace(second=0)
+        utc_offset = datetime.utcnow() - datetime.now()
+        return time + utc_offset
 
-    time = time.replace(microsecond=0)
-
-    utc_offset = datetime.utcnow() - datetime.now()
-    return time + utc_offset
+    return None
 
 def parse_time(time):
     '''Parse a string intended to define a time. It can be specified as an
@@ -158,6 +175,8 @@ if __name__ == "__main__":
         else:
             start = min(*times)
             end = max(*times)
+
+        print start, end
 
         model.log('activity', activity, start=start, end=end)
     else:
