@@ -5,14 +5,14 @@ if '__main__' == __name__:
     import argparse
 
     from regularity.model import Model
-    from regularity.gui.main import RegularityWindow
+    from regularity.gui.regularity_app import RegularityApp
 
     parser = argparse.ArgumentParser()
 
     args = parser.parse_args()
 
     model = Model()
-    regularity_window = RegularityWindow(model)
-    regularity_window.main()
+    regularity_app = RegularityApp(model)
+    regularity_app.main()
     
 

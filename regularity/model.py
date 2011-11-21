@@ -15,7 +15,7 @@ class Model(object):
         self.db = connection.regularity
         self.uuid = uuid.uuid4().hex
 
-    def overlapping(self, timeline_name, start, end, buffer_=None, **kwargs):
+    def overlapping(self, start, end, buffer_=None, **kwargs):
         '''Return timeline events that overlap with the time denoted by start
            and end
            
@@ -40,7 +40,6 @@ class Model(object):
 
         criteria = kwargs
         criteria.update({
-            'timeline' : timeline_name,
             '$nor' : [
                 { 'start' : { '$gt' : end } },
                 { 'end' : { '$lt' : start } },
@@ -52,13 +51,13 @@ class Model(object):
 
         return overlapping
 
-    def union(self, timeline_name, activity, start, end):
+    def union(self, timeline_name, name, start, end):
         '''Union this activity with any activities on the same timeline that 
-           overlap and are the same activity.
+           overlap and have the same activity name.
            
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
-           @param activity : str
+           @param name : str
                the name of the activity to match up
            @param start : datetime
                the start time of the activity
@@ -66,14 +65,15 @@ class Model(object):
                the end time of the activity'''
 
         extra_criteria = {
-            'activity' : activity
+            'timeline' : timeline_name,
+            'name' : name
         }
-        overlapping_activities = self.overlapping(timeline_name, start, end, **extra_criteria)
+        overlapping_activities = self.overlapping(start, end, **extra_criteria)
 
         data = dict(
             session=self.uuid,
             timeline=timeline_name,
-            activity=activity,
+            name=name,
             start=start,
             end=end,
         )
@@ -91,13 +91,13 @@ class Model(object):
         self.db.events.save(data)
         return data
 
-    def truncate(self, timeline_name, activity, start, end):
+    def truncate(self, timeline_name, name, start, end):
         '''Truncate all activities on the same timeline that overlap and are
            not the same activity.
            
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
-           @param activity : str
+           @param name : str
                the name of the activity to match up
            @param start : datetime
                the start time of the activity
@@ -105,9 +105,10 @@ class Model(object):
                the end time of the activity'''
 
         extra_criteria = {
-            'activity' : { '$ne' : activity },
+            'timeline' : timeline_name,
+            'name' : { '$ne' : name },
         }
-        overlapping_activities = self.overlapping(timeline_name, start, end, **extra_criteria)
+        overlapping_activities = self.overlapping(start, end, **extra_criteria)
 
         for a in overlapping_activities:
             if a['end'] < end:
@@ -125,14 +126,14 @@ class Model(object):
                 activity1 = dict(
                     session=self.uuid,
                     timeline=timeline_name,
-                    activity=a['activity'],
+                    name=a['name'],
                     start=a['start'],
                     end=start
                 )
                 activity2 = dict(
                     session=self.uuid,
                     timeline=timeline_name,
-                    activity=a['activity'],
+                    name=a['name'],
                     start=end,
                     end=a['end'],
                 )
@@ -160,12 +161,12 @@ class Model(object):
 
         return data
 
-    def log(self, timeline_name, activity, start=None, end=None):
+    def log(self, timeline_name, name, start=None, end=None):
         '''Log the occurence of an activity to the specified timeline.
 
            @param timeline_name : str
                name of the timeline
-           @param activity : str
+           @param name : str
                name of the activity
            @param start : optional, datetime
                the start time of the activity, defaults to now
@@ -179,22 +180,21 @@ class Model(object):
             end = start
 
         timeline = self.timeline(timeline_name)
-        data = self.union(timeline_name, activity, start, end)
+        data = self.union(timeline_name, name, start, end)
 
         if not timeline.get('allow_overlap', True):
-            self.truncate(timeline_name, activity, data['start'], data['end'])
+            self.truncate(timeline_name, name, data['start'], data['end'])
 
 
-    def update(self, timeline_name, activity):
+    def update(self, timeline_name, name):
         '''Log the continuance of an ongoing activity to the specified timeline
 
            @param timeline_name : str, the name of the timeline
-           @param activity : str, the name of the activity'''
+           @param name : str, the name of the activity'''
 
         end = datetime.datetime.utcnow()
         start = end - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD)
         
-        self.log(timeline_name, activity, start=start, end=end)
+        self.log(timeline_name, name, start=start, end=end)
         
-
 
