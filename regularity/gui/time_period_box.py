@@ -37,7 +37,10 @@ class TimePeriodBox(clutter.Box):
         self.start = start
         self.end = end
 
-        events = self.model.overlapping(self.start, self.end)
+        additional_criteria = {
+            'timeline' : { '$in' : ('activity', 'application') }
+        }
+        events = self.model.overlapping(self.start, self.end, **additional_criteria)
         events = list(events)
         
         # group the events by activity
