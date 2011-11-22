@@ -116,24 +116,55 @@ def parse_time(time):
 
     raise argparse.ArgumentTypeError('invalid time format')
 
-#def parse_activity(activity):
-#    '''Parse a list of strings intended to define a time. The list can contain
-#       times anywhere, and they will be extracted and return separately.
-#
-#       @param activity : a list of strings taken from the command line'''
-#
-#    # parse all the strings to see if they represent times
-#    times = tuple(parse_time(s) for s in activity)
-#
-#    # extract the strings which do not represent times
-#    is_activity = tuple(not bool(b) for b in times)
-#    activity = compress(activity, is_activity)
-#    activity = ' '.join(activity).lower()
-#
-#    # remove the None times from the times list
-#    times = tuple(compress(times, times))
-#
-#    return activity, times
+def pang(model, args):
+    '''Log or record a pang - something that happened at a certain point in
+       time.
+      
+       @param model : reularity.model.Model
+           the connection to mongoDB
+       @param args : argparse.Namespace
+           the parsed command line options'''
+
+    timeline = 'bm.pang'
+    if args.time:
+        time = args.time
+    else:
+        time = datetime.utcnow()
+
+    model.log(timeline, args.activity, start=args.time, end=args.time)
+
+def session(model, args):
+    '''Log or record an activity that happened over a range of time.
+      
+       @param model : reularity.model.Model
+           the connection to mongoDB
+       @param args : argparse.Namespace
+           the parsed command line options'''
+
+    timeline = 'bm.session'
+    now = datetime.utcnow()
+
+    if args.time1:
+        if args.time2:
+            start = min(args.time1, args.time2)
+            end = max(args.time1, args.time2)
+        else:
+            start = min(now, args.time1)
+            end = max(now, args.time1)
+
+        model.log(timeline, args.activity, start=start, end=end)
+    else:
+        running = True
+
+        model.log(timeline, args.activity, start=now)
+        while running:
+            try:
+                model.update(timeline, args.activity)
+                time.sleep(args.frequency)
+            except KeyboardInterrupt:
+                model.update(timeline, args.activity)
+                running = False
+    
 
 if __name__ == "__main__":
 
@@ -146,44 +177,23 @@ if __name__ == "__main__":
     from regularity.model import Model
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('activity')
-    parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
-    parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
-    parser.add_argument('--debug', action='store_true', default=False)
-    parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=1.0)
+    subparsers = parser.add_subparsers()
+
+    pang_parser = subparsers.add_parser('pang')
+    pang_parser.add_argument('activity')
+    pang_parser.add_argument('time', type=parse_time, nargs='?')
+    pang_parser.set_defaults(func=pang)
+
+    range_parser = subparsers.add_parser('session')
+    range_parser.add_argument('activity')
+    range_parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
+    range_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
+    range_parser.add_argument('--frequency', metavar='seconds', type=float, default=1.0)
+    range_parser.set_defaults(func=session)
 
     args = parser.parse_args()
 
-    if args.debug:
-        logging.basicConfig(
-            level=logging.DEBUG
-        )
-    else:
-        logging.basicConfig(
-            level=logging.INFO
-        )
-
     model = Model()
+    args.func(model, args)
 
-    now = datetime.utcnow()
-    if args.time1:
-        if args.time2:
-            start = min(args.time1, args.time2)
-            end = max(args.time1, args.time2)
-        else:
-            start = min(now, args.time1)
-            end = max(now, args.time1)
-
-        model.log('activity', args.activity, start=start, end=end)
-    else:
-        running = True
-
-        model.log('activity', args.activity, start=now)
-        while running:
-            try:
-                model.update('activity', args.activity)
-                time.sleep(args.frequency)
-            except KeyboardInterrupt:
-                model.update('activity', args.activity)
-                running = False
 
