@@ -4,48 +4,48 @@ from datetime import datetime, timedelta
 import logging
 import re
 
-
-def offset_minute_seconds(offset):
-    '''Parse an offset string to see if it describes a minute:second offset.
+def offset_minute(offset):
+    '''Parse an offset string to see if it describes a minute offset.
 
        @param offset : str
            the offset string'''
 
-    match = re.match(r'^([-+])([0-5]?[0-9])(:([0-5][0-9]))?$', offset)
+    match = re.match(r'^([-+])([0-5]?[0-9])$', offset)
 
     if match:
         sign = match.group(1)
         minutes = int(match.group(2))
-        seconds = match.group(4)
 
-        if seconds:
-            seconds = int(seconds)
-        else:
-            seconds = 0
-
-        total_seconds = 60 * minutes + seconds
+        seconds = 60 * minutes
 
         if '+' == sign:
-            return total_seconds
-        return -total_seconds
+            return seconds
+        return -seconds
 
     return None
 
-def offset_hour_minute_seconds(offset):
-    '''Parse an offset string to see if it describes a hour:minute:second 
-       offset.
+def offset_hour_minute(offset):
+    '''Parse an offset string to see if it describes a hour:minute offset.
 
        @param offset : str
            the offset string'''
 
-    match = re.match(r'^([-+])([0-9]+):([0-5][0-9]):([0-5][0-9])$', offset)
+    match = re.match(r'^([-+])([0-9]+):([0-5][0-9])$', offset)
 
     if match:
         sign = match.group(1)
-        total_seconds = 3600 * int(match.group(2)) + 60 * int(match.group(3)) + int(match.group(4))
+        hours = int(match.group(2))
+        minutes = int(match.group(3))
+
+        seconds = 60 * minutes
+
+        if hours:
+            hours = int(hours)
+            seconds += 3600 * hours
+
         if '+' == sign:
-            return total_seconds
-        return -total_seconds
+            return seconds
+        return -seconds
 
     return None
 
@@ -55,9 +55,9 @@ def parse_offset(offset):
        @param offset : str
            the offset from now'''
 
-    seconds = offset_minute_seconds(offset)
+    seconds = offset_minute(offset)
     if not seconds:
-        seconds = offset_hour_minute_seconds(offset)
+        seconds = offset_hour_minute(offset)
 
     if seconds:
         delta_time = timedelta(seconds=seconds)
@@ -71,11 +71,10 @@ def parse_time_of_day(time):
        @time : str
            the time of day'''
 
-    match = re.match(r'(2[0-3]|[0-1]?[0-9]):([0-5][0-9])(:([0-5][0-9]))?$', time)
+    match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])$', time)
     if match:
         hours = match.group(1)
         minutes = match.group(2)
-        seconds = match.group(4)
 
         time = datetime.now()
         time = time.replace(microsecond=0)
@@ -88,11 +87,7 @@ def parse_time_of_day(time):
             minutes = int(minutes)
             time = time.replace(minute=minutes)
 
-        if seconds is not None:
-            seconds = int(seconds)
-            time = time.replace(second=seconds)
-        else:
-            time = time.replace(second=0)
+        time = time.replace(second=0, microsecond=0)
 
         utc_offset = datetime.utcnow() - datetime.now()
         return time + utc_offset
@@ -102,9 +97,9 @@ def parse_time_of_day(time):
 def parse_time(time):
     '''Parse a string intended to define a time. It can be specified as an
        offset from now, or a time for TODAY. Offsets are defined as a + or -, 
-       then a minute, minute:second, or hour:minute:second time string. If 
-       is no + or -, then the string is parsed as a time. Times are specified 
-       as either hour:minute or hour:minute:second strings.
+       then a minute or hour:minute time string. If is no + or -, then the 
+       string is parsed as a time. Times are specified as either hour:minute 
+       or hour:minute:second strings.
 
        @param time : str
            a string representing an offset or time of day'''
@@ -119,26 +114,26 @@ def parse_time(time):
     if _time:
         return _time
 
-    return None
+    raise argparse.ArgumentTypeError('invalid time format')
 
-def parse_activity(activity):
-    '''Parse a list of strings intended to define a time. The list can contain
-       times anywhere, and they will be extracted and return separately.
-
-       @param activity : a list of strings taken from the command line'''
-
-    # parse all the strings to see if they represent times
-    times = tuple(parse_time(s) for s in activity)
-
-    # extract the strings which do not represent times
-    is_activity = tuple(not bool(b) for b in times)
-    activity = compress(activity, is_activity)
-    activity = ' '.join(activity).lower()
-
-    # remove the None times from the times list
-    times = tuple(compress(times, times))
-
-    return activity, times
+#def parse_activity(activity):
+#    '''Parse a list of strings intended to define a time. The list can contain
+#       times anywhere, and they will be extracted and return separately.
+#
+#       @param activity : a list of strings taken from the command line'''
+#
+#    # parse all the strings to see if they represent times
+#    times = tuple(parse_time(s) for s in activity)
+#
+#    # extract the strings which do not represent times
+#    is_activity = tuple(not bool(b) for b in times)
+#    activity = compress(activity, is_activity)
+#    activity = ' '.join(activity).lower()
+#
+#    # remove the None times from the times list
+#    times = tuple(compress(times, times))
+#
+#    return activity, times
 
 if __name__ == "__main__":
 
@@ -151,7 +146,9 @@ if __name__ == "__main__":
     from regularity.model import Model
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('activity', nargs='+')
+    parser.add_argument('activity')
+    parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
+    parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=1.0)
 
@@ -168,34 +165,25 @@ if __name__ == "__main__":
 
     model = Model()
 
-    activity, times = parse_activity(args.activity)
-
-    if len(times) > 2:
-        print 'at most two times can be supplied'
-        sys.exit(1)
-
     now = datetime.utcnow()
-    if times:
-        
-        if 1 == len(times):
-            start = min(now, *times)
-            end = max(now, *times)
+    if args.time1:
+        if args.time2:
+            start = min(args.time1, args.time2)
+            end = max(args.time1, args.time2)
         else:
-            start = min(*times)
-            end = max(*times)
+            start = min(now, args.time1)
+            end = max(now, args.time1)
 
-        print start, end
-
-        model.log('activity', activity, start=start, end=end)
+        model.log('activity', args.activity, start=start, end=end)
     else:
         running = True
 
-        model.log('activity', activity, start=now)
+        model.log('activity', args.activity, start=now)
         while running:
             try:
-                model.update('activity', activity)
+                model.update('activity', args.activity)
                 time.sleep(args.frequency)
             except KeyboardInterrupt:
-                model.update('activity', activity)
+                model.update('activity', args.activity)
                 running = False
 
