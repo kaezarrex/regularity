@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta
 import logging
+import math
 import re
 
 def offset_minute(offset):
@@ -164,6 +165,75 @@ def session(model, args):
             except KeyboardInterrupt:
                 model.update(timeline, args.activity)
                 running = False
+
+def discretize(data, levels):
+    '''Discretizes a list of values to a list of levels.
+
+       @param levels : int
+           the number of levels to discretize to'''
+
+    min_ = float(min(data))
+    max_ = float(max(data))
+    increment = (max_ - min_) / levels
+
+    thresholds = tuple(min_ + i * increment for i in xrange(1, levels)) + (max_,)
+
+    def level(x):
+        for i, threshold in enumerate(thresholds):
+            if x <= threshold:
+                return i
+        return levels - 1
+
+    return tuple(level(d) for d in data)
+
+def stats(model, args):
+    '''Print out statistics for the query defined by the command line
+       parameters.
+
+       @param model : reularity.model.Model
+           the connection to mongoDB
+       @param args : argparse.Namespace
+           the parsed command line options'''
+
+    events = model.events(
+        name=args.activities,
+        timeline=args.timelines
+    )
+
+    if not events:
+        print 'no events found'
+        return
+
+    N = len(events)
+    print '%d events total' % N
+
+    timedeltas = tuple(e['end'] - e['start'] for e in events)
+    durations = tuple(td.total_seconds() for td in timedeltas)
+    
+    average = sum(durations) / N
+
+    squared_differences = list((d - average)**2 for d in durations)
+    standard_deviation = math.sqrt(sum(squared_differences) / N)
+
+    print 'min duration (seconds):     %0.2f' % min(durations)
+    print 'man duration (seconds):     %0.2f' % max(durations)
+    print 'average duration (seconds): %0.2f +/- %0.2f' % (average, standard_deviation) 
+
+    time_of_day = [0] * 24
+    for e in events:
+        start_hour = e['start'].hour
+        end_hour = e['end'].hour
+
+        for i in range(start_hour, end_hour+1):
+            time_of_day[i] += 1
+
+    markers = (0x2581, 0x2582, 0x2583, 0x2584, 0x2585, 0x2586, 0x2587,)
+    levels = discretize(time_of_day, len(markers))
+    time_of_day_string = (unichr(markers[l]) for l in levels)
+    time_of_day_string = ' '.join(time_of_day_string)
+
+    print 'time of day:                %s' % time_of_day_string
+    print
     
 
 if __name__ == "__main__":
@@ -190,6 +260,11 @@ if __name__ == "__main__":
     range_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     range_parser.add_argument('--frequency', metavar='seconds', type=float, default=1.0)
     range_parser.set_defaults(func=session)
+
+    query_parser = subparsers.add_parser('stats')
+    query_parser.add_argument('--activity', action='append', dest='activities', default=None, metavar='activity')
+    query_parser.add_argument('--timeline', action='append', dest='timelines', default=None, metavar='timeline')
+    query_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
 

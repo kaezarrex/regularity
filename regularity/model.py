@@ -51,6 +51,33 @@ class Model(object):
 
         return overlapping
 
+    def events(self, **kwargs):
+        '''Perform a general query for events. By default, will return all
+           events unless filtering criteria are specified in kwargs.
+           
+           @param kwargs : 
+               mapping from keyword to list of values - valid keys are:
+
+               name - the name of the event
+               timeline - the name of the timeline'''
+
+        criteria = dict()
+
+        name = kwargs.get('name')
+        if name:
+            criteria['name'] = {
+                '$in' : name
+            }
+
+        timeline = kwargs.get('timeline')
+        if timeline:
+            criteria['timeline'] = {
+                '$in' : timeline
+            }
+
+        data = self.db.events.find(criteria)
+        return tuple(data)
+
     def union(self, timeline_name, name, start, end):
         '''Union this activity with any activities on the same timeline that 
            overlap and have the same activity name.
