@@ -200,6 +200,8 @@ def stats(model, args):
         timeline=args.timelines
     )
 
+    # TODO refactor this code
+
     if not events:
         print 'no events found'
         return
@@ -215,24 +217,26 @@ def stats(model, args):
     squared_differences = list((d - average)**2 for d in durations)
     standard_deviation = math.sqrt(sum(squared_differences) / N)
 
-    print 'min duration (seconds):     %0.2f' % min(durations)
-    print 'man duration (seconds):     %0.2f' % max(durations)
-    print 'average duration (seconds): %0.2f +/- %0.2f' % (average, standard_deviation) 
-
-    time_of_day = [0] * 24
+    times_per_hour = [0] * 24
+    percent_of_hour = [0] * 24
     for e in events:
         start_hour = e['start'].hour
         end_hour = e['end'].hour
 
         for i in range(start_hour, end_hour+1):
-            time_of_day[i] += 1
+            times_per_hour[i] += 1
+
 
     markers = (0x2581, 0x2582, 0x2583, 0x2584, 0x2585, 0x2586, 0x2587,)
-    levels = discretize(time_of_day, len(markers))
-    time_of_day_string = (unichr(markers[l]) for l in levels)
-    time_of_day_string = ' '.join(time_of_day_string)
+    levels = discretize(times_per_hour, len(markers))
+    times_per_hour_string = (unichr(markers[l]) for l in levels)
+    times_per_hour_string = ' '.join(times_per_hour_string)
 
-    print 'time of day:                %s' % time_of_day_string
+
+    print 'min duration (seconds):     %0.2f' % min(durations)
+    print 'max duration (seconds):     %0.2f' % max(durations)
+    print 'average duration (seconds): %0.2f +/- %0.2f' % (average, standard_deviation) 
+    print 'times per hour:             %s' % times_per_hour_string
     print
     
 
@@ -262,8 +266,8 @@ if __name__ == "__main__":
     range_parser.set_defaults(func=session)
 
     query_parser = subparsers.add_parser('stats')
-    query_parser.add_argument('--activity', action='append', dest='activities', default=None, metavar='activity')
-    query_parser.add_argument('--timeline', action='append', dest='timelines', default=None, metavar='timeline')
+    query_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')
+    query_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
     query_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
