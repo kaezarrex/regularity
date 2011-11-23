@@ -5,6 +5,8 @@ import logging
 import math
 import re
 
+from regularity.stats import EventStats
+
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
 
@@ -165,26 +167,7 @@ def session(model, args):
             except KeyboardInterrupt:
                 model.update(timeline, args.activity)
                 running = False
-
-def discretize(data, levels):
-    '''Discretizes a list of values to a list of levels.
-
-       @param levels : int
-           the number of levels to discretize to'''
-
-    min_ = float(min(data))
-    max_ = float(max(data))
-    increment = (max_ - min_) / levels
-
-    thresholds = tuple(min_ + i * increment for i in xrange(1, levels)) + (max_,)
-
-    def level(x):
-        for i, threshold in enumerate(thresholds):
-            if x <= threshold:
-                return i
-        return levels - 1
-
-    return tuple(level(d) for d in data)
+    model.close()
 
 def stats(model, args):
     '''Print out statistics for the query defined by the command line
@@ -206,37 +189,30 @@ def stats(model, args):
         print 'no events found'
         return
 
-    N = len(events)
-    print '%d events total' % N
+    s = EventStats(*events)
 
-    timedeltas = tuple(e['end'] - e['start'] for e in events)
-    durations = tuple(td.total_seconds() for td in timedeltas)
-    
-    average = sum(durations) / N
-
-    squared_differences = list((d - average)**2 for d in durations)
-    standard_deviation = math.sqrt(sum(squared_differences) / N)
-
-    times_per_hour = [0] * 24
-    percent_of_hour = [0] * 24
-    for e in events:
-        start_hour = e['start'].hour
-        end_hour = e['end'].hour
-
-        for i in range(start_hour, end_hour+1):
-            times_per_hour[i] += 1
+#    times_per_hour = [0] * 24
+#    percent_of_hour = [0] * 24
+#    for e in events:
+#        start_hour = e['start'].hour
+#        end_hour = e['end'].hour
+#
+#        for i in range(start_hour, end_hour+1):
+#            times_per_hour[i] += 1
+#
+#
+#    markers = (0x2581, 0x2582, 0x2583, 0x2584, 0x2585, 0x2586, 0x2587,)
+#    levels = discretize(times_per_hour, len(markers))
+#    times_per_hour_string = (unichr(markers[l]) for l in levels)
+#    times_per_hour_string = ' '.join(times_per_hour_string)
 
 
-    markers = (0x2581, 0x2582, 0x2583, 0x2584, 0x2585, 0x2586, 0x2587,)
-    levels = discretize(times_per_hour, len(markers))
-    times_per_hour_string = (unichr(markers[l]) for l in levels)
-    times_per_hour_string = ' '.join(times_per_hour_string)
+    print '%d events total' % len(events)
+    print 'min duration (seconds):     %0.2f' % s.min_duration()
+    print 'max duration (seconds):     %0.2f' % s.max_duration()
+    print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
+#    print 'times per hour:             %s' % times_per_hour_string
 
-
-    print 'min duration (seconds):     %0.2f' % min(durations)
-    print 'max duration (seconds):     %0.2f' % max(durations)
-    print 'average duration (seconds): %0.2f +/- %0.2f' % (average, standard_deviation) 
-    print 'times per hour:             %s' % times_per_hour_string
     print
     
 
