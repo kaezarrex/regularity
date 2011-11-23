@@ -1,5 +1,5 @@
 
-from itertools import imap
+from itertools import imap, izip
 import math
 
 def mean(*args):
@@ -22,28 +22,60 @@ def std(*args):
     squared_differences = ((x - mean_)**2 for x in args)
     return math.sqrt(sum(squared_differences) / len(args))
 
-def discretize(levels, *args):
-    '''Discretizes a list of values to a list of levels.
+def idiscretize(min_, max_, levels):
+    '''Build a list of thresholds to range between min_ and max_.
 
-       @param levels : int
-           the number of levels to discretize to
+       @param min_ : int|float
+           the minimum value to account for
+       @param max_ : int|float
+           the maximum value to account for
+       @param n : int
+           the number of thresholds to build'''
+
+    increment = float(max_ - min_) / levels
+
+    bin_max = min_
+    for i in xrange(levels - 1):
+        bin_min = bin_max
+        bin_max = bin_min + increment
+        yield bin_min, bin_max
+
+    yield bin_max, max_
+           
+def ibins(bins, *args):
+    '''Bin the data (build a histogram) in args.
+
+       @param bins : int
+           the number of bins
        @param args : list(int|float)
-           the numbers to discretize'''
+           the data to bin'''
 
-    min_ = float(min(data))
-    max_ = float(max(data))
-    increment = (max_ - min_) / levels
+    min_ = min(args)
+    max_ = max(args)
 
-    thresholds = tuple(min_ + i * increment for i in xrange(1, levels)) + (max_,)
+    bin_ranges = list(idiscretize(min_, max_, bins))
+    bins = tuple(list() for i in xrange(bins))
 
-    def level(x):
-        for i, threshold in enumerate(thresholds):
-            if x <= threshold:
-                return i
-        return levels - 1
+    for x in args:
+        for i, (bin_min, bin_max) in enumerate(bin_ranges):
+            
+            if x < bin_max:
+                break
 
-    return tuple(level(d) for d in data)
+        bins[i].append(x)
 
+    return izip(bin_ranges, bins)
+
+def ibin_counts(bins, *args):
+    '''Return just the counts of elements in a binning of args.
+
+       @param bins : int
+           the number of bins
+       @param args : list(int|float)
+           the data to bin'''
+
+    for bin_range, bin_ in ibins(bins, *args):
+        yield bin_range, len(bin_)
 
 class EventStats(object):
 
@@ -90,4 +122,19 @@ class EventStats(object):
 
         return std(*self.idurations_seconds())
 
+    def bins_duration(self, bins_):
+        '''Return a binning of the durations.
 
+           @param bins_ : int
+               the number of bins to use'''
+
+        return list(ibins(bins_, *self.idurations_seconds()))
+
+    def bin_counts_duration(self, bins_):
+        '''Return a count of the binning of the durations.
+
+           @param bins_ : int
+               the number of bins to use'''
+
+        return list(ibin_counts(bins_, *self.idurations_seconds()))
+        

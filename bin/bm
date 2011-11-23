@@ -6,6 +6,7 @@ import math
 import re
 
 from regularity.stats import EventStats
+from regularity.output_formatter import OutputFormatter
 
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
@@ -167,7 +168,6 @@ def session(model, args):
             except KeyboardInterrupt:
                 model.update(timeline, args.activity)
                 running = False
-    model.close()
 
 def stats(model, args):
     '''Print out statistics for the query defined by the command line
@@ -183,35 +183,26 @@ def stats(model, args):
         timeline=args.timelines
     )
 
-    # TODO refactor this code
-
     if not events:
         print 'no events found'
         return
 
     s = EventStats(*events)
 
-#    times_per_hour = [0] * 24
-#    percent_of_hour = [0] * 24
-#    for e in events:
-#        start_hour = e['start'].hour
-#        end_hour = e['end'].hour
-#
-#        for i in range(start_hour, end_hour+1):
-#            times_per_hour[i] += 1
-#
-#
-#    markers = (0x2581, 0x2582, 0x2583, 0x2584, 0x2585, 0x2586, 0x2587,)
-#    levels = discretize(times_per_hour, len(markers))
-#    times_per_hour_string = (unichr(markers[l]) for l in levels)
-#    times_per_hour_string = ' '.join(times_per_hour_string)
-
+    bin_counts = s.bin_counts_duration(args.bins)
+    of = OutputFormatter(*bin_counts)
+    of.set_column_format(0, '{:0.2f}-{:0.2f}')
+    of.set_column_format(1, '{:d}')
+    of.set_column_pad_left(1, True)
 
     print '%d events total' % len(events)
     print 'min duration (seconds):     %0.2f' % s.min_duration()
     print 'max duration (seconds):     %0.2f' % s.max_duration()
     print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
-#    print 'times per hour:             %s' % times_per_hour_string
+    print 'duration histogram:        ', 
+    row_joiner = '\n' + \
+          '                            '
+    of.output(row_joiner=row_joiner, column_joiner='..', pad_character='.')
 
     print
     
@@ -241,10 +232,11 @@ if __name__ == "__main__":
     range_parser.add_argument('--frequency', metavar='seconds', type=float, default=1.0)
     range_parser.set_defaults(func=session)
 
-    query_parser = subparsers.add_parser('stats')
-    query_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')
-    query_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
-    query_parser.set_defaults(func=stats)
+    stats_parser = subparsers.add_parser('stats')
+    stats_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')
+    stats_parser.add_argument('--bins', type=int, default=5)
+    stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
+    stats_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
 
