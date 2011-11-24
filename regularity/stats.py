@@ -22,25 +22,43 @@ def std(*args):
     squared_differences = ((x - mean_)**2 for x in args)
     return math.sqrt(sum(squared_differences) / len(args))
 
-def idiscretize(min_, max_, levels):
-    '''Build a list of thresholds to range between min_ and max_.
+def isteps(steps, *args):
+    '''Return an iterator of discretized steps over the range of args.
 
-       @param min_ : int|float
-           the minimum value to account for
-       @param max_ : int|float
-           the maximum value to account for
-       @param n : int
-           the number of thresholds to build'''
+       @param steps : int
+           the number of steps to build
+       @param args : list(int|float)
+           the data whose range will be discretized'''
 
-    increment = float(max_ - min_) / levels
+    min_ = min(args)
+    max_ = max(args)
+    increment = float(max_ - min_) / steps
 
-    bin_max = min_
-    for i in xrange(levels - 1):
-        bin_min = bin_max
-        bin_max = bin_min + increment
-        yield bin_min, bin_max
+    step_max = min_
+    for i in xrange(steps - 1):
+        step_min = step_max
+        step_max = step_min + increment
+        yield step_min, step_max
 
-    yield bin_max, max_
+    yield step_max, max_
+
+def ibin_assignments(bins, *args):
+    '''Return an iterator over the bin assignment for each datum in args.
+
+       @param bins : int
+           the number of bins
+       @param args : list(int|float)
+           the data to bin'''
+
+    bin_ranges = list(isteps(bins, *args))
+
+    yield bin_ranges
+    for x in args:
+        for i, (bin_min, bin_max) in enumerate(bin_ranges):
+            
+            if x < bin_max:
+                break
+        yield i
            
 def ibins(bins, *args):
     '''Bin the data (build a histogram) in args.
@@ -50,18 +68,12 @@ def ibins(bins, *args):
        @param args : list(int|float)
            the data to bin'''
 
-    min_ = min(args)
-    max_ = max(args)
+    iassignments = ibin_assignments(bins, *args)
 
-    bin_ranges = list(idiscretize(min_, max_, bins))
+    bin_ranges = iassignments.next()
     bins = tuple(list() for i in xrange(bins))
 
-    for x in args:
-        for i, (bin_min, bin_max) in enumerate(bin_ranges):
-            
-            if x < bin_max:
-                break
-
+    for i, x in izip(iassignments, args):
         bins[i].append(x)
 
     return izip(bin_ranges, bins)

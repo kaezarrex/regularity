@@ -104,12 +104,9 @@ class OutputFormatter(object):
 
         return s + pad_string
 
-
-    def output(self, row_joiner='\n', column_joiner=' ', pad_character=' '):
+    def iformatted_rows(self, column_joiner=' ', pad_character=' '):
         '''Print out the formatted data.
 
-           @param row_joiner : optional, str
-               what to use to join rows together
            @param column_joiner : optional, str
                what to use to join columns together
            @param pad_character : str
@@ -124,9 +121,6 @@ class OutputFormatter(object):
             for column, w, pad_left in izip(row, widths, self.pads):
                 formatted_row.append(self.pad(column, w, pad_character=pad_character, pad_left=pad_left))
 
-            formatted_rows.append(column_joiner.join(formatted_row))
-
-        print row_joiner.join(formatted_rows)
-            
-            
+            formatted_row = column_joiner.join(formatted_row)
+            yield formatted_row
 

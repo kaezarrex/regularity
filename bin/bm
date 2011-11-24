@@ -1,10 +1,13 @@
 #! /usr/bin/env python
 
 from datetime import datetime, timedelta
+from itertools import imap, izip
 import logging
 import math
+from operator import itemgetter
 import re
 
+from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
 from regularity.output_formatter import OutputFormatter
 
@@ -188,9 +191,13 @@ def stats(model, args):
         return
 
     s = EventStats(*events)
-
     bin_counts = s.bin_counts_duration(args.bins)
-    of = OutputFormatter(*bin_counts)
+
+    sparkline = Sparkline(*imap(itemgetter(1), bin_counts))
+    icolumns = sparkline.icolumns(10)
+
+    output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(bin_counts, icolumns))
+    of = OutputFormatter(*output)
     of.set_column_format(0, '{:0.2f}-{:0.2f}')
     of.set_column_format(1, '{:d}')
     of.set_column_pad_left(1, True)
@@ -202,7 +209,7 @@ def stats(model, args):
     print 'duration histogram:        ', 
     row_joiner = '\n' + \
           '                            '
-    of.output(row_joiner=row_joiner, column_joiner='..', pad_character='.')
+    print row_joiner.join(of.iformatted_rows(column_joiner='  ', pad_character=' '))
 
     print
     
