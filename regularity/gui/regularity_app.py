@@ -1,6 +1,8 @@
 import clutter
 
 from navigation_box import NavigationBox
+from stats_box import StatsBox
+from text_box import TextBox
 from time_period_box import TimePeriodBox
 
 class RegularityApp(object):
@@ -15,12 +17,13 @@ class RegularityApp(object):
 
         self.stage = clutter.Stage()
         self.stage.set_user_resizable(True)
+        self.stage.set_color(clutter.color_from_string('#000'))
         self.stage.connect('destroy', clutter.main_quit)
 
         # create the layout manager, add its actor to the stage
         self.layout = clutter.BoxLayout()
-        self.layout.set_vertical(True)
-        self.layout.set_pack_start(True)
+        #self.layout.set_vertical(True)
+        #self.layout.set_pack_start(True)
         self.box = clutter.Box(self.layout)
         self.stage.add(self.box)
 
@@ -35,11 +38,17 @@ class RegularityApp(object):
         self.box.set_size(width, height)
 
     def main(self):
-        time_period_box = TimePeriodBox(self.model)
-        self.layout.pack(time_period_box, False, True, True, clutter.BOX_ALIGNMENT_CENTER, clutter.BOX_ALIGNMENT_CENTER)
+        #time_period_box = TimePeriodBox(self.model)
+        #self.layout.pack(time_period_box, False, True, True, clutter.BOX_ALIGNMENT_CENTER, clutter.BOX_ALIGNMENT_CENTER)
 
-        navigation_box = NavigationBox()
-        self.layout.pack(navigation_box, False, True, False, clutter.BOX_ALIGNMENT_START, clutter.BOX_ALIGNMENT_START)
+        text_box = TextBox(self.model)
+        self.layout.pack(text_box, False, True, False, clutter.BOX_ALIGNMENT_START, clutter.BOX_ALIGNMENT_START)
+
+        stats_box = StatsBox(self.model)
+        self.layout.pack(stats_box, True, True, True, clutter.BOX_ALIGNMENT_CENTER, clutter.BOX_ALIGNMENT_CENTER)
+
+        #navigation_box = NavigationBox()
+        #self.layout.pack(navigation_box, False, True, False, clutter.BOX_ALIGNMENT_START, clutter.BOX_ALIGNMENT_START)
 
         self.stage.show_all()
         

@@ -9,7 +9,7 @@ import re
 
 from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
-from regularity.output_formatter import OutputFormatter
+from regularity.table import Table
 
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
@@ -181,35 +181,42 @@ def stats(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
+    extra_criteria = dict()
+
     events = model.events(
         name=args.activities,
         timeline=args.timelines
     )
+
+    if args.max_duration:
+        duration_td = timedelta(seconds=args.max_duration)
+        events = list(e for e in events if e['end'] - e['start'] <= duration_td)
 
     if not events:
         print 'no events found'
         return
 
     s = EventStats(*events)
-    bin_counts = s.bin_counts_duration(args.bins)
+    bins = min(args.bins, len(events))
+    bin_counts = s.bin_counts_duration(bins)
 
     sparkline = Sparkline(*imap(itemgetter(1), bin_counts))
-    icolumns = sparkline.icolumns(10)
+    icolumns = sparkline.icolumns(20)
 
     output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(bin_counts, icolumns))
-    of = OutputFormatter(*output)
-    of.set_column_format(0, '{:0.2f}-{:0.2f}')
-    of.set_column_format(1, '{:d}')
-    of.set_column_pad_left(1, True)
+    table = Table(*output)
+    table.set_column_format(0, '{:0.2f}-{:0.2f}')
+    table.set_column_format(1, '{:d}')
+    table.set_column_pad_left(1, True)
 
     print '%d events total' % len(events)
     print 'min duration (seconds):     %0.2f' % s.min_duration()
     print 'max duration (seconds):     %0.2f' % s.max_duration()
     print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
-    print 'duration histogram:        ', 
+    print 'duration breakdown:        ', 
     row_joiner = '\n' + \
           '                            '
-    print row_joiner.join(of.iformatted_rows(column_joiner='  ', pad_character=' '))
+    print row_joiner.join(table.iformatted_rows(column_joiner='  ', pad_character=' '))
 
     print
     
@@ -242,6 +249,7 @@ if __name__ == "__main__":
     stats_parser = subparsers.add_parser('stats')
     stats_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')
     stats_parser.add_argument('--bins', type=int, default=5)
+    stats_parser.add_argument('--max-duration', type=int, default=None)
     stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
     stats_parser.set_defaults(func=stats)
 

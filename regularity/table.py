@@ -1,7 +1,7 @@
 
 from itertools import imap, izip
 
-class OutputFormatter(object):
+class Table(object):
 
     def __init__(self, *args):
         '''Create an OutputFormatter, an object for printing tabular, formatted
