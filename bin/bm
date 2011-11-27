@@ -123,23 +123,6 @@ def parse_time(time):
 
     raise argparse.ArgumentTypeError('invalid time format')
 
-def pang(model, args):
-    '''Log or record a pang - something that happened at a certain point in
-       time.
-      
-       @param model : reularity.model.Model
-           the connection to mongoDB
-       @param args : argparse.Namespace
-           the parsed command line options'''
-
-    timeline = 'bm.pang'
-    if args.time:
-        time = args.time
-    else:
-        time = datetime.utcnow()
-
-    model.log(timeline, args.activity, start=args.time, end=args.time)
-
 def session(model, args):
     '''Log or record an activity that happened over a range of time.
       
@@ -233,11 +216,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
-
-    pang_parser = subparsers.add_parser('pang')
-    pang_parser.add_argument('activity')
-    pang_parser.add_argument('time', type=parse_time, nargs='?')
-    pang_parser.set_defaults(func=pang)
 
     range_parser = subparsers.add_parser('session')
     range_parser.add_argument('activity')
