@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 
 import datetime
+import dbus
+import dbus.mainloop.glib
+import gobject
 import gtk
 import logging
 import traceback
@@ -9,57 +12,146 @@ import wnck
 from regularity.model import Model
 
 class RegularityDaemon(object):
-    
-    def __init__(self, frequency=5.0):
+
+    def __init__(self, frequency=1.0):
         '''Create a RegularityDaemon, which logs to the database the active
-           window and application over time.
+           application over time. It will also log when the screensaver becomes
+           active.
            
            @param frequency : float 
-               the frequency at which the daemon write to the database'''
+               the frequency at which the daemon writes to the database'''
 
-        self.frequency = frequency
+        # create the dbus main loop, set it as the default dbus main loop
+        dbus_main_loop = dbus.mainloop.glib.DBusGMainLoop()
+        dbus.set_default_main_loop(dbus_main_loop)
+
+        # create a bus object, and attach the signal receivers
+        self.bus = dbus.SessionBus()
+        self.bind_events()
+
+        # create the connection to the mongoDB database
         self.model = Model()
+        self.frequency = frequency
 
-        # do this once, for whatever reason it's empty the first time
-        self.window()
+        # initialize default active values
+        self.active = dict(
+            application=self.active_application(),
+            screensaver=self.screensaver_state()
+        )
 
-    def window(self):
-        '''Get the active window.'''
+    def on_active_application_changed(self, from_path, to_path):
+        '''The signal handler for active application changes.
+        
+           @param from_path : dbus.String
+               the dbus path of the window we are switching from
+           @param to_path : dbus.String
+               the dbus path of the window we are switching to'''
 
-        screen = wnck.screen_get_default()
-        window = screen.get_active_window()
+        self.active['application'] = None
+        if to_path:
+            self.active['application'] = self.path_to_application(to_path)
 
-        return window
+
+    def bind_active_application_changed(self):
+        '''Bind to the signal that fires when the active application changes.'''
+
+        self.bus.add_signal_receiver(
+            self.on_active_application_changed,
+            'ActiveApplicationChanged',
+            'org.ayatana.bamf.matcher'
+        )
+
+    def on_screensaver_active_changed(self, screensaver_active):
+        '''The signal handler for screensaver state changes.
+        
+           @param screensaver_active : dbus.Boolean
+               whether the screensaver is active right now'''
+
+        self.active['screensaver'] = bool(screensaver_active)
+
+
+    def bind_screensaver_active_changed(self):
+        '''Bind to the signal that fires when the screensaver state changes.'''
+
+        self.bus.add_signal_receiver(
+            self.on_screensaver_active_changed,
+            'ActiveChanged',
+            'org.gnome.ScreenSaver'
+        )
+
+    def bind_events(self):
+        '''A wrapper method for binding to all signals of interest.'''
+
+        self.bind_active_application_changed()
+        self.bind_screensaver_active_changed()
+
+    def path_to_application(self, path):
+        '''Resolve an application dbus object path to a name.'''
+
+        return self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
+
+    def active_application_path(self):
+        '''Get the dbus object path of the active application.'''
+
+        return self.bus.call_blocking(
+            'org.ayatana.bamf', 
+            '/org/ayatana/bamf/matcher', 
+            'org.ayatana.bamf.matcher', 
+            'ActiveApplication', 
+            None, 
+            tuple()
+        )
+
+    def active_application(self):
+        '''Get the name of the active application.'''
+
+        application_path = self.active_application_path()
+        if application_path:
+            application = self.path_to_application(application_path)
+
+            if application:
+                return application
+
+        return None
+
+    def screensaver_state(self):
+        '''Return the state of the screensaver, True meaning it's on and False
+           meaning it is not.'''
+
+        return bool(self.bus.call_blocking(
+            'org.gnome.ScreenSaver', 
+            '/org/gnome/ScreenSaver', 
+            'org.gnome.ScreenSaver', 
+            'GetActive', 
+            None,
+            tuple()
+        ))
 
     def update(self):
-        '''Store in the database the current active window and application.'''
+        '''Log the current active states to the database.'''
 
-        try:
-            window = self.window()
+        application = self.active['application']
+        if application:
+            logging.debug('active application: %s' % application)
+            self.model.update('application', application)
 
-            if window is None:
-                logging.warn('active window is undefined')
-            else:
-                window_name = window.get_name()
-                application = window.get_application()
-                application_name = application.get_name()
+        screensaver = self.active['screensaver']
+        if screensaver:
+            logging.debug('screensaver active: %s' % screensaver)
+            self.model.update('screensaver', 'screensaver')
 
-                self.model.update('application', application_name)
-                self.model.update('window', window_name)
+        return True
 
-                logging.debug('active application: %s' % application_name)
-                logging.debug('active window: %s' % window_name)
+    def run(self):
+        '''Log the initial state, set up the timeout, and begin the main loop.'''
+           
+        logging.debug('initializing active application: %s' % self.active['application'])
+        logging.debug('initializing screensaver state: %s' % self.active['screensaver'])
 
-            return True
-        except Exception, e:
-            logging.critical(traceback.format_exc()) 
-            gtk.main_quit()
+        self.update()
 
-    def main(self):
-        '''Start the main loop.'''
-
-        gtk.timeout_add(int(self.frequency) * 1000, self.update)
-        gtk.main()
+        gobject.timeout_add(int(self.frequency * 1000), self.update)
+        gobject.MainLoop().run()
 
 if __name__ == "__main__":
 
@@ -81,7 +173,7 @@ if __name__ == "__main__":
         )
 
     regularityd = RegularityDaemon(frequency=args.frequency)
-    regularityd.main()
+    regularityd.run()
 
 
     
