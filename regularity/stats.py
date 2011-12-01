@@ -110,10 +110,10 @@ def ibin_range_assignments(bins, *args, **kwargs):
         if high_bin is None:
             high_bin = i
 
-        if high_bin > low_bin:
-            yield tuple(range(low_bin, high_bin))
+        if high_bin < low_bin:
+            yield tuple(range(low_bin, n_bins) + range(high_bin + 1))
         else:
-            yield tuple(range(low_bin, n_bins + 1) + range(high_bin + 1))
+            yield tuple(range(low_bin, high_bin + 1))
            
 def ibins(bins, *args):
     '''Bin the data (build a histogram) in args.
@@ -257,4 +257,6 @@ class EventStats(object):
            @param bins_ : int
                the number of bins to use'''
         
-        return list(ibin_range_counts(bins_, *self.itime_ranges_time_of_day_seconds()))
+        min_value = 0
+        max_value = 24*60*60
+        return list(ibin_range_counts(bins_, *self.itime_ranges_time_of_day_seconds(), min_value=min_value, max_value=max_value))

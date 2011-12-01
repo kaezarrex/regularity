@@ -183,7 +183,10 @@ def stats(model, args):
     bins = min(args.bins, len(events))
     bin_counts = s.bin_counts_duration(bins)
 
-    print s.bin_counts_time_of_day(24)
+    poo = s.bin_counts_time_of_day(24)
+    for i, (b, x) in enumerate(poo):
+        print i, x
+
 
     sparkline = Sparkline(*imap(itemgetter(1), bin_counts))
     icolumns = sparkline.icolumns(20)
