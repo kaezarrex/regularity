@@ -9,7 +9,7 @@ def seconds_to_time(seconds):
     minutes = seconds / 60
     seconds = seconds - 60 * minutes
 
-    return '{:02d}:{:02d}:{:02d}'.format(hours, minutes, seconds)
+    return '{:02d}:{:02d}'.format(hours, minutes)
 
 def datetime_to_time_of_day(dt):
     '''Return the time of day of a datetime, expressed as seconds into the day.
