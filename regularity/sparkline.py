@@ -15,7 +15,7 @@ class Sparkline(object):
 
         self.data = args
 
-    def icolumns(self, max_steps, marker='+'):
+    def icolumns(self, max_steps, marker='+', min_=None):
         '''Return an iterator over the columns.
 
            @param max_steps : int
@@ -29,7 +29,7 @@ class Sparkline(object):
         steps = min(max_steps, max_datum + 1)
         steps = max(2, steps)
 
-        iassignments = ibin_assignments(steps, *self.data)
+        iassignments = ibin_assignments(steps, *self.data, min=min_)
 
         bin_ranges = iassignments.next()
 

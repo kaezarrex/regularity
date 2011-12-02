@@ -232,7 +232,7 @@ def stats(model, args):
 
     def print_histogram(data, range_format):
         sparkline = Sparkline(*imap(itemgetter(1), data))
-        icolumns = sparkline.icolumns(20)
+        icolumns = sparkline.icolumns(20, min_=0)
 
         output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(data, icolumns))
 

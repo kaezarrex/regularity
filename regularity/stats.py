@@ -39,7 +39,7 @@ def std(*args):
     squared_differences = ((x - mean_)**2 for x in args)
     return math.sqrt(sum(squared_differences) / len(args))
 
-def isteps(steps, *args):
+def isteps(steps, *args, **kwargs):
     '''Return an iterator of discretized steps over the range of args.
 
        @param steps : int
@@ -47,7 +47,10 @@ def isteps(steps, *args):
        @param args : list(int|float)
            the data whose range will be discretized'''
 
-    min_ = min(args)
+    min_ = kwargs.get('min')
+    if min_ is None:
+        min_ = min(args)
+
     max_ = max(args)
     increment = float(max_ - min_) / steps
 
@@ -59,7 +62,7 @@ def isteps(steps, *args):
 
     yield step_max, max_
 
-def ibin_assignments(bins, *args):
+def ibin_assignments(bins, *args, **kwargs):
     '''Return an iterator over the bin assignment for each datum in args.
 
        @param bins : int
@@ -67,7 +70,7 @@ def ibin_assignments(bins, *args):
        @param args : list(int|float)
            the data to bin'''
 
-    bin_ranges = list(isteps(bins, *args))
+    bin_ranges = list(isteps(bins, *args, **kwargs))
 
     yield bin_ranges
     for x in args:
@@ -85,10 +88,8 @@ def ibin_range_assignments(bins, *args):
        @param args : list((int|float, int|float))
            the ranges to bin'''
 
-    min_ = min(min(x) for x in args)
-    max_ = max(max(x) for x in args)
-
-    bin_ranges = list(isteps(bins, min_, max_))
+    all_args = list(chain(*args))
+    bin_ranges = list(isteps(bins, *all_args))
     n_bins = len(bin_ranges)
 
     yield bin_ranges
