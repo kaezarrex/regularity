@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from datetime import datetime, timedelta
+import datetime
 from itertools import imap, izip
 import logging
 import math
@@ -67,8 +67,8 @@ def parse_offset(offset):
         seconds = offset_hour_minute(offset)
 
     if seconds:
-        delta_time = timedelta(seconds=seconds)
-        return datetime.utcnow() + delta_time
+        delta_time = datetime.timedelta(seconds=seconds)
+        return datetime.datetime.utcnow() + delta_time
 
     return None
 
@@ -83,7 +83,7 @@ def parse_time_of_day(time):
         hours = match.group(1)
         minutes = match.group(2)
 
-        time = datetime.now()
+        time = datetime.datetime.now()
         time = time.replace(microsecond=0)
 
         if hours is not None:
@@ -96,17 +96,41 @@ def parse_time_of_day(time):
 
         time = time.replace(second=0, microsecond=0)
 
-        utc_offset = datetime.utcnow() - datetime.now()
+        utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
         return time + utc_offset
+
+    return None
+
+def parse_datetime(datetime):
+    '''Parse a string intended to define a datetime. Accepts dates in ISO 8601 
+       format, that is YYYY-MM-DDTHH:MMZ.
+       
+       @param date : str
+           a string representing a date'''
+
+    date = date.strip()
+
+    match = re.match(r'^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2})([0-9]{2})Z$')
+
+    if match:
+        year = int(match.group(1))
+        month = int(match.group(2))
+        day = int(match.group(3))
+        hour = int(match.group(4))
+        minute = int(match.group(5))
+
+        return datetime.datetime(year=year, month=month, day=day, hour=hour, minute=minute)
 
     return None
 
 def parse_time(time):
     '''Parse a string intended to define a time. It can be specified as an
-       offset from now, or a time for TODAY. Offsets are defined as a + or -, 
-       then a minute or hour:minute time string. If is no + or -, then the 
-       string is parsed as a time. Times are specified as either hour:minute 
-       or hour:minute:second strings.
+       offset from now, or a time for TODAY, or an ISO 8601 datetime. Offsets 
+       are defined as a + or -, then a minute or hour:minute time string. If the
+       string does not begin with a + or -, then the string is parsed as a time.
+       Times are specified as either hour:minute or hour:minute:second strings.
+       If the string cannot be parsed as a time, then it is parsed as a 
+       datetime.
 
        @param time : str
            a string representing an offset or time of day'''
@@ -121,6 +145,10 @@ def parse_time(time):
     if _time:
         return _time
 
+    _time = parse_datetime(time)
+    if _time:
+        return _time
+
     raise argparse.ArgumentTypeError('invalid time format')
 
 def session(model, args):
@@ -132,7 +160,7 @@ def session(model, args):
            the parsed command line options'''
 
     timeline = 'bm.session'
-    now = datetime.utcnow()
+    now = datetime.datetime.utcnow()
 
     if args.time1:
         if args.time2:
@@ -155,6 +183,26 @@ def session(model, args):
                 model.update(timeline, args.activity)
                 running = False
 
+def timeline(model, args):
+    '''Display a timeline for the time range specified in args.
+
+       @param model : reularity.model.Model
+           the connection to mongoDB
+       @param args : argparse.Namespace
+           the parsed command line options'''
+
+    now = datetime.datetime.utcnow()
+    if args.time2:
+        start = min(args.time1, args.time2)
+        end = max(args.time1, args.time2)
+    else:
+        start = min(args.time1, now)
+        end = max(args.time1, now)
+
+    events = model.overlapping(start, end)
+
+    print '%d events' % len(events)
+
 def stats(model, args):
     '''Print out statistics for the query defined by the command line
        parameters.
@@ -164,15 +212,13 @@ def stats(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
-    extra_criteria = dict()
-
     events = model.events(
         name=args.activities,
         timeline=args.timelines
     )
 
     if args.max_duration:
-        duration_td = timedelta(seconds=args.max_duration)
+        duration_td = datetime.timedelta(seconds=args.max_duration)
         events = list(e for e in events if e['end'] - e['start'] <= duration_td)
 
     if not events:
@@ -181,30 +227,33 @@ def stats(model, args):
 
     s = EventStats(*events)
     bins = min(args.bins, len(events))
-    bin_counts = s.bin_counts_duration(bins)
+    bin_counts_duration = s.bin_counts_duration(bins)
+    bin_counts_time_of_day = s.bin_counts_time_of_day(24)
 
-    poo = s.bin_counts_time_of_day(24)
-    for i, (b, x) in enumerate(poo):
-        print i, x
+    row_joiner = '\n' + \
+          '                            '
 
+    def print_histogram(data):
+        sparkline = Sparkline(*imap(itemgetter(1), data))
+        icolumns = sparkline.icolumns(20)
+        output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(data, icolumns))
 
-    sparkline = Sparkline(*imap(itemgetter(1), bin_counts))
-    icolumns = sparkline.icolumns(20)
+        table = Table(*output)
+        table.set_column_format(0, '{:0.2f}-{:0.2f}')
+        table.set_column_format(1, '{:d}')
+        table.set_column_pad_left(1, True)
 
-    output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(bin_counts, icolumns))
-    table = Table(*output)
-    table.set_column_format(0, '{:0.2f}-{:0.2f}')
-    table.set_column_format(1, '{:d}')
-    table.set_column_pad_left(1, True)
+        print row_joiner.join(table.iformatted_rows(column_joiner='  ', pad_character=' '))
+        
 
     print '%d events total' % len(events)
     print 'min duration (seconds):     %0.2f' % s.min_duration()
     print 'max duration (seconds):     %0.2f' % s.max_duration()
     print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
     print 'duration breakdown:        ', 
-    row_joiner = '\n' + \
-          '                            '
-    print row_joiner.join(table.iformatted_rows(column_joiner='  ', pad_character=' '))
+    print_histogram(bin_counts_duration)
+    print '\ntime of day breakdown:     ', 
+    print_histogram(bin_counts_time_of_day)
 
     print
     
@@ -228,6 +277,11 @@ if __name__ == "__main__":
     range_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     range_parser.add_argument('--frequency', metavar='seconds', type=float, default=1.0)
     range_parser.set_defaults(func=session)
+
+    timeline_parser = subparsers.add_parser('timeline')
+    timeline_parser.add_argument('time1', type=parse_time, metavar='time')
+    timeline_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
+    timeline_parser.set_defaults(func=timeline)
 
     stats_parser = subparsers.add_parser('stats')
     stats_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')

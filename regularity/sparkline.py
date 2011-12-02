@@ -15,13 +15,19 @@ class Sparkline(object):
 
         self.data = args
 
-    def icolumns(self, steps, marker='+'):
+    def icolumns(self, max_steps, marker='+'):
         '''Return an iterator over the columns.
 
-           @param steps : int
-               the number of steps in the y-axis
+           @param max_steps : int
+               the maximum number of steps in the y-axis
            @param marker : optional, str
                a single character to act as the marker'''
+
+        # steps is at most max_steps
+        # steps is at least 2
+        max_datum = max(self.data)
+        steps = min(max_steps, max_datum + 1)
+        steps = max(2, steps)
 
         iassignments = ibin_assignments(steps, *self.data)
 
