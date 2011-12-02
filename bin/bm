@@ -226,23 +226,22 @@ def stats(model, args):
         return
 
     s = EventStats(*events)
-    bins = min(args.bins, len(events))
-    bin_counts_duration = s.bin_counts_duration(bins)
-    bin_counts_time_of_day = s.bin_counts_time_of_day(24)
+    duration_bins = min(args.duration_bins, len(events))
+    bin_counts_duration = s.bin_counts_duration(duration_bins)
+    bin_counts_time_of_day = s.bin_counts_time_of_day(args.tod_bins)
 
-    row_joiner = '\n' + \
-          '                            '
-
-    def print_histogram(data):
+    def print_histogram(data, range_format):
         sparkline = Sparkline(*imap(itemgetter(1), data))
         icolumns = sparkline.icolumns(20)
+
         output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(data, icolumns))
 
         table = Table(*output)
-        table.set_column_format(0, '{:0.2f}-{:0.2f}')
+        table.set_column_format(0, range_format)
         table.set_column_format(1, '{:d}')
         table.set_column_pad_left(1, True)
 
+        row_joiner = '\n                            '
         print row_joiner.join(table.iformatted_rows(column_joiner='  ', pad_character=' '))
         
 
@@ -251,9 +250,9 @@ def stats(model, args):
     print 'max duration (seconds):     %0.2f' % s.max_duration()
     print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
     print 'duration breakdown:        ', 
-    print_histogram(bin_counts_duration)
+    print_histogram(bin_counts_duration, '{:0.2f}-{:0.2f}')
     print '\ntime of day breakdown:     ', 
-    print_histogram(bin_counts_time_of_day)
+    print_histogram(bin_counts_time_of_day, '{:s}-{:s}')
 
     print
     
@@ -285,9 +284,10 @@ if __name__ == "__main__":
 
     stats_parser = subparsers.add_parser('stats')
     stats_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')
-    stats_parser.add_argument('--bins', type=int, default=5)
+    stats_parser.add_argument('--duration-bins', type=int, default=5)
     stats_parser.add_argument('--max-duration', type=int, default=None)
     stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
+    stats_parser.add_argument('--tod-bins', type=int, default=24)
     stats_parser.set_defaults(func=stats)
 
     args = parser.parse_args()

@@ -2,6 +2,15 @@
 from itertools import chain, imap, izip
 import math
 
+def seconds_to_time(seconds):
+    seconds = int(seconds)
+    hours = seconds / 3600
+    seconds = seconds - 3600 * hours
+    minutes = seconds / 60
+    seconds = seconds - 60 * minutes
+
+    return '{:02d}:{:02d}:{:02d}'.format(hours, minutes, seconds)
+
 def datetime_to_time_of_day(dt):
     '''Return the time of day of a datetime, expressed as seconds into the day.
 
@@ -259,4 +268,14 @@ class EventStats(object):
         
         min_value = 0
         max_value = 24*60*60
-        return list(ibin_range_counts(bins_, *self.itime_ranges_time_of_day_seconds(), min_value=min_value, max_value=max_value))
+
+        time_ranges = self.itime_ranges_time_of_day_seconds()
+        _counts = ibin_range_counts(bins_, *time_ranges, min_value=min_value, max_value=max_value)
+
+        counts = list()
+        for (start, end), count in _counts:
+            start = seconds_to_time(start)
+            end = seconds_to_time(end)
+            counts.append(((start, end), count))
+            
+        return counts
