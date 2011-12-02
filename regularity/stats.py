@@ -77,7 +77,7 @@ def ibin_assignments(bins, *args):
                 break
         yield i
 
-def ibin_range_assignments(bins, *args, **kwargs):
+def ibin_range_assignments(bins, *args):
     '''Return an iterator over the bin assignments for each range in args.
 
        @param bins : int
@@ -85,18 +85,8 @@ def ibin_range_assignments(bins, *args, **kwargs):
        @param args : list((int|float, int|float))
            the ranges to bin'''
 
-    min_value = kwargs.get('min_value')
-    max_value = kwargs.get('max_value')
-
-    if min_value is None:
-        min_ = min(min(x) for x in args)
-    else:
-        min_ = min_value
-
-    if max_value is None:
-        max_ = max(max(x) for x in args)
-    else:
-        max_ = max_value
+    min_ = min(min(x) for x in args)
+    max_ = max(max(x) for x in args)
 
     bin_ranges = list(isteps(bins, min_, max_))
     n_bins = len(bin_ranges)
@@ -142,7 +132,7 @@ def ibins(bins, *args):
 
     return izip(bin_ranges, bins)
 
-def ibins_range(bins, *args, **kwargs):
+def ibins_range(bins, *args):
     '''Bin the ranges (build a histogram) in args. The ranges are disretized 
        and a bin gets incremented each time a range overlaps with it.
 
@@ -151,7 +141,7 @@ def ibins_range(bins, *args, **kwargs):
        @param args : list((int|float, int|float))
            the ranges to bin'''
 
-    iassignments = ibin_range_assignments(bins, *args, **kwargs)
+    iassignments = ibin_range_assignments(bins, *args)
 
     bin_ranges = iassignments.next()
     bins = tuple(list() for i in xrange(bins))
@@ -173,7 +163,7 @@ def ibin_counts(bins, *args):
     for bin_range, bin_ in ibins(bins, *args):
         yield bin_range, len(bin_)
 
-def ibin_range_counts(bins, *args, **kwargs):
+def ibin_range_counts(bins, *args):
     '''Return just the counts of elements in a binning of args.
 
        @param bins : int
@@ -181,7 +171,7 @@ def ibin_range_counts(bins, *args, **kwargs):
        @param args : list((int|float, int|float))
            the ranges to bin'''
 
-    for bin_range, bin_ in ibins_range(bins, *args, **kwargs):
+    for bin_range, bin_ in ibins_range(bins, *args):
         yield bin_range, len(bin_)
 
 class EventStats(object):
@@ -265,12 +255,9 @@ class EventStats(object):
 
            @param bins_ : int
                the number of bins to use'''
-        
-        min_value = 0
-        max_value = 24*60*60
 
         time_ranges = self.itime_ranges_time_of_day_seconds()
-        _counts = ibin_range_counts(bins_, *time_ranges, min_value=min_value, max_value=max_value)
+        _counts = ibin_range_counts(bins_, *time_ranges)
 
         counts = list()
         for (start, end), count in _counts:

@@ -287,7 +287,7 @@ if __name__ == "__main__":
     stats_parser.add_argument('--duration-bins', type=int, default=5)
     stats_parser.add_argument('--max-duration', type=int, default=None)
     stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
-    stats_parser.add_argument('--tod-bins', type=int, default=24)
+    stats_parser.add_argument('--tod-bins', type=int, default=5)
     stats_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
