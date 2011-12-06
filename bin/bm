@@ -170,18 +170,21 @@ def session(model, args):
             start = min(now, args.time1)
             end = max(now, args.time1)
 
-        model.log(timeline, args.activity, start=start, end=end)
+        data = model.log(timeline, args.activity, start=start, end=end)
     else:
-        running = True
 
-        model.log(timeline, args.activity, start=now)
-        while running:
-            try:
-                model.update(timeline, args.activity)
-                time.sleep(args.frequency)
-            except KeyboardInterrupt:
-                model.update(timeline, args.activity)
-                running = False
+        start = now
+        try:
+            raw_input()
+        except (EOFError, KeyboardInterrupt):
+            pass
+        finally:
+            end = datetime.datetime.utcnow()
+            data = model.log(timeline, args.activity, start=now, end=end)
+
+    s = EventStats(data)
+    print 'id:                 %s' % data['_id']
+    print 'duration (seconds): %0.2f' % s.idurations_seconds().next()
 
 def timeline(model, args):
     '''Display a timeline for the time range specified in args.
@@ -261,6 +264,7 @@ if __name__ == "__main__":
 
     import argparse
     from itertools import compress
+    import readline
     import time
 
     import sys

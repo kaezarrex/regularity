@@ -212,6 +212,8 @@ class Model(object):
         if not timeline.get('allow_overlap', True):
             self.truncate(timeline_name, name, data['start'], data['end'])
 
+        return data
+
 
     def update(self, timeline_name, name):
         '''Log the continuance of an ongoing activity to the specified timeline
@@ -222,6 +224,7 @@ class Model(object):
         end = datetime.datetime.utcnow()
         start = end - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD)
         
-        self.log(timeline_name, name, start=start, end=end)
+        data = self.log(timeline_name, name, start=start, end=end)
+        return data
         
 
