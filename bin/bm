@@ -159,7 +159,7 @@ def dot(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
-    timeline = 'bm.dot'
+    timeline = 'bm'
     time = args.time
 
     if not time:
@@ -177,7 +177,7 @@ def dash(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
-    timeline = 'bm.log'
+    timeline = 'bm'
     now = datetime.datetime.utcnow()
 
     if args.time1:
