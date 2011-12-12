@@ -1,6 +1,5 @@
 import datetime
 import pymongo
-import uuid
 
 class Model(object):
 
@@ -13,7 +12,28 @@ class Model(object):
 
         connection = pymongo.Connection(host)
         self.db = connection.regularity
-        self.uuid = uuid.uuid4().hex
+
+    def _build_event(self, timeline_name, name, start, end):
+        '''Helper function for building an event object to be saved to the
+           database.
+
+           @param timeline_name : str
+               the name of the timeline to scan for overlapping activities
+           @param name : str
+               the name of the activity to match up
+           @param start : datetime
+               the start time of the activity
+           @param end : datetime
+               the end time of the activity'''
+
+        data = dict(
+            timeline=timeline_name,
+            name=name,
+            start=start,
+            end=end,
+        )
+
+        return data
 
     def overlapping(self, start, end, buffer_=None, **kwargs):
         '''Return timeline events that overlap with the time denoted by start
@@ -65,25 +85,19 @@ class Model(object):
 
         name = kwargs.get('name')
         if name:
-            if isinstance(name, (list, tuple, set)):
-                criteria['name'] = {
-                    '$in' : name
-                }
-            else:
-                criteria['name'] = name
+            criteria['name'] = name
 
         timeline = kwargs.get('timeline')
         if timeline:
-            criteria['timeline'] = {
-                '$in' : timeline
-            }
+            criteria['timeline'] = timeline
 
         data = self.db.events.find(criteria)
         return tuple(data)
 
-    def union(self, timeline_name, name, start, end):
-        '''Union this activity with any activities on the same timeline that 
-           overlap and have the same activity name.
+    def _log(self, timeline_name, name, start, end, union=True):
+        '''Log the activity into the database and optionally union it with any 
+           activities on the same timeline that overlap and have the same 
+           activity name.
            
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
@@ -92,31 +106,29 @@ class Model(object):
            @param start : datetime
                the start time of the activity
            @param end : datetime
-               the end time of the activity'''
+               the end time of the activity
+           @param union : bool
+               optional, whether the event should be unioned with other events
+               of the same timeline and name, defaults to True'''
 
-        extra_criteria = {
-            'timeline' : timeline_name,
-            'name' : name
-        }
-        overlapping_activities = self.overlapping(start, end, **extra_criteria)
+        data = self._build_event(timeline_name, name, start, end)
 
-        data = dict(
-            session=self.uuid,
-            timeline=timeline_name,
-            name=name,
-            start=start,
-            end=end,
-        )
+        if union:
+            extra_criteria = {
+                'timeline' : timeline_name,
+                'name' : name
+            }
+            overlapping_activities = self.overlapping(start, end, **extra_criteria)
 
-        if overlapping_activities:
-            # consolidate all the overlapping activities into one
-            # preserve the id of the first activity
-            data['_id'] = overlapping_activities[0]['_id']
-            data['start'] = min(start, *(a['start'] for a in overlapping_activities))
-            data['end'] = max(end, *(a['end'] for a in overlapping_activities))
+            if overlapping_activities:
+                # consolidate all the overlapping activities into one
+                # preserve the id of the first activity
+                data['_id'] = overlapping_activities[0]['_id']
+                data['start'] = min(start, *(a['start'] for a in overlapping_activities))
+                data['end'] = max(end, *(a['end'] for a in overlapping_activities))
 
-            for a in overlapping_activities:
-                self.db.events.remove(a)
+                for a in overlapping_activities:
+                    self.db.events.remove(a)
 
         self.db.events.save(data)
         return data
@@ -153,45 +165,14 @@ class Model(object):
 
             else:
                 # split the activity into two
-                activity1 = dict(
-                    session=self.uuid,
-                    timeline=timeline_name,
-                    name=a['name'],
-                    start=a['start'],
-                    end=start
-                )
-                activity2 = dict(
-                    session=self.uuid,
-                    timeline=timeline_name,
-                    name=a['name'],
-                    start=end,
-                    end=a['end'],
-                )
+                activity1 = self._build_event(timeline_name, a['name'], a['start'], start)
+                activity2 = self._build_event(timeline_name, a['name'], end, a['end'])
 
                 self.db.events.remove(a)
                 self.db.events.save(activity1)
                 self.db.events.save(activity2)
 
-    def timeline(self, timeline_name):
-        '''Get the timeline with the given name.
-
-           @param timeline_name : str
-               the name of the timeline to get'''
-
-        criteria = {
-            'name' : timeline_name
-        }
-        data = self.db.timelines.find_one(criteria)
-
-        if not data:
-            self.db.timelines.insert(dict(
-                name=timeline_name,
-            ))
-            data = self.db.timelines.find_one(criteria)
-
-        return data
-
-    def log(self, timeline_name, name, start=None, end=None):
+    def log(self, timeline_name, name, start=None, end=None, **kwargs):
         '''Log the occurence of an activity to the specified timeline.
 
            @param timeline_name : str
@@ -209,10 +190,11 @@ class Model(object):
         if end is None:
             end = start
 
-        timeline = self.timeline(timeline_name)
-        data = self.union(timeline_name, name, start, end)
+        union = kwargs.get('union', True)
+        truncate = kwargs.get('truncate', False)
 
-        if not timeline.get('allow_overlap', True):
+        data = self._log(timeline_name, name, start, end, union=union)
+        if truncate:
             self.truncate(timeline_name, name, data['start'], data['end'])
 
         return data
@@ -221,8 +203,10 @@ class Model(object):
     def update(self, timeline_name, name):
         '''Log the continuance of an ongoing activity to the specified timeline
 
-           @param timeline_name : str, the name of the timeline
-           @param name : str, the name of the activity'''
+           @param timeline_name : str
+               the name of the timeline
+           @param name : str
+               the name of the activity'''
 
         end = datetime.datetime.utcnow()
         start = end - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD)
