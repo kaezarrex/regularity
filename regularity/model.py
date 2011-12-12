@@ -65,9 +65,12 @@ class Model(object):
 
         name = kwargs.get('name')
         if name:
-            criteria['name'] = {
-                '$in' : name
-            }
+            if isinstance(name, (list, tuple, set)):
+                criteria['name'] = {
+                    '$in' : name
+                }
+            else:
+                criteria['name'] = name
 
         timeline = kwargs.get('timeline')
         if timeline:

@@ -216,7 +216,7 @@ def stats(model, args):
            the parsed command line options'''
 
     events = model.events(
-        name=args.activities,
+        name=args.activity,
         timeline=args.timelines
     )
 
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     timeline_parser.set_defaults(func=timeline)
 
     stats_parser = subparsers.add_parser('stats')
-    stats_parser.add_argument('-a', '--activity', action='append', dest='activities', default=None, metavar='activity')
+    stats_parser.add_argument('activity', nargs='?')
     stats_parser.add_argument('--duration-bins', type=int, default=5)
     stats_parser.add_argument('--max-duration', type=int, default=None)
     stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
