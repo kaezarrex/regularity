@@ -151,7 +151,7 @@ def parse_time(time):
 
     raise argparse.ArgumentTypeError('invalid time format')
 
-def session(model, args):
+def log(model, args):
     '''Log or record an activity that happened over a range of time.
       
        @param model : reularity.model.Model
@@ -159,7 +159,7 @@ def session(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
-    timeline = 'bm.session'
+    timeline = 'bm.log'
     now = datetime.datetime.utcnow()
 
     if args.time1:
@@ -174,15 +174,18 @@ def session(model, args):
     else:
 
         start = now
-        try:
-            raw_input()
-        except (EOFError, KeyboardInterrupt):
-            pass
-        finally:
-            end = datetime.datetime.utcnow()
-            data = model.log(timeline, args.activity, start=now, end=end)
+        running = True
+        while running:
+            try:
+                time.sleep(1.0)
+            except KeyboardInterrupt:
+                running = False
+
+        end = datetime.datetime.utcnow()
+        data = model.log(timeline, args.activity, start=now, end=end)
 
     s = EventStats(data)
+    print
     print 'id:                 %s' % data['_id']
     print 'duration (seconds): %0.2f' % s.idurations_seconds().next()
 
@@ -274,12 +277,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    range_parser = subparsers.add_parser('session')
-    range_parser.add_argument('activity')
-    range_parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
-    range_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
-    range_parser.add_argument('--frequency', metavar='seconds', type=float, default=1.0)
-    range_parser.set_defaults(func=session)
+    log_parser = subparsers.add_parser('log')
+    log_parser.add_argument('activity')
+    log_parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
+    log_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
+    log_parser.add_argument('--frequency', metavar='seconds', type=float, default=1.0)
+    log_parser.set_defaults(func=log)
 
     timeline_parser = subparsers.add_parser('timeline')
     timeline_parser.add_argument('time1', type=parse_time, metavar='time')
