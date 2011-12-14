@@ -204,7 +204,7 @@ def dash(model, args):
 
     s = EventStats(data)
     print
-    print 'id:                 %s' % data['_id']
+    print data['_id']
     print 'duration (seconds): %0.2f' % s.idurations_seconds().next()
 
 def timeline(model, args):
