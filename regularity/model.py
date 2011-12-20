@@ -20,11 +20,11 @@ class Model(object):
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
            @param name : str
-               the name of the activity to match up
+               the name of the activity to create
            @param start : datetime
-               the start time of the activity
+               the start time of the activity, in UTC
            @param end : datetime
-               the end time of the activity'''
+               the end time of the activity, in UTC'''
 
         data = dict(
             timeline=timeline_name,
@@ -39,8 +39,6 @@ class Model(object):
         '''Return timeline events that overlap with the time denoted by start
            and end
            
-           @param timeline_name : str
-               the name of the timeline to scan for overlapping activities
            @param start : datetime
                the start time of the activity
            @param end : datetime

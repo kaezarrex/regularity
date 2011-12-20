@@ -1,7 +1,20 @@
 #! /usr/bin/env node
 
-var argv = require('optimist').argv;
+var argv = require('optimist').argv,
+    Model = require('./model').Model,
+    model = new Model();
 
 console.log(argv);
+
+start = new Date(2011, 10, 22);
+end = new Date(2011, 10, 23);
+
+model.overlapping(start, end, null, null, function(events) {
+    console.log(events);
+    events.forEach(function(e) {
+        console.log(e);
+    });
+});
+
 
 
