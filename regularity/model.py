@@ -13,10 +13,12 @@ class Model(object):
         connection = pymongo.Connection(host)
         self.db = connection.regularity
 
-    def _build_event(self, timeline_name, name, start, end):
+    def _build_event(self, client, timeline_name, name, start, end):
         '''Helper function for building an event object to be saved to the
            database.
 
+           @param client : str
+               the name of the client to which the event belongs
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
            @param name : str
@@ -27,6 +29,7 @@ class Model(object):
                the end time of the activity, in UTC'''
 
         data = dict(
+            client=client,
             timeline=timeline_name,
             name=name,
             start=start,
@@ -35,10 +38,12 @@ class Model(object):
 
         return data
 
-    def overlapping(self, start, end, buffer_=None, **kwargs):
+    def overlapping(self, client, start, end, buffer_=None, **kwargs):
         '''Return timeline events that overlap with the time denoted by start
            and end
            
+           @param client : str
+               the name of the client to which the event belongs
            @param start : datetime
                the start time of the activity
            @param end : datetime
@@ -58,6 +63,7 @@ class Model(object):
 
         criteria = kwargs
         criteria.update({
+            'client' : client,
             '$nor' : [
                 { 'start' : { '$gt' : end } },
                 { 'end' : { '$lt' : start } },
@@ -69,17 +75,21 @@ class Model(object):
 
         return overlapping
 
-    def events(self, **kwargs):
+    def events(self, client, **kwargs):
         '''Perform a general query for events. By default, will return all
            events unless filtering criteria are specified in kwargs.
            
+           @param client : str
+               the name of the client to which the event belongs
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
                name - the name of the event
                timeline - the name of the timeline'''
 
-        criteria = dict()
+        criteria = {
+            'client' : client
+        }
 
         name = kwargs.get('name')
         if name:
@@ -92,11 +102,13 @@ class Model(object):
         data = self.db.events.find(criteria)
         return tuple(data)
 
-    def _log(self, timeline_name, name, start, end, union=True):
+    def _log(self, client, timeline_name, name, start, end, union=True):
         '''Log the activity into the database and optionally union it with any 
            activities on the same timeline that overlap and have the same 
            activity name.
            
+           @param client : str
+               the name of the client to which the event belongs
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
            @param name : str
@@ -109,14 +121,14 @@ class Model(object):
                optional, whether the event should be unioned with other events
                of the same timeline and name, defaults to True'''
 
-        data = self._build_event(timeline_name, name, start, end)
+        data = self._build_event(client, timeline_name, name, start, end)
 
         if union:
             extra_criteria = {
                 'timeline' : timeline_name,
                 'name' : name
             }
-            overlapping_activities = self.overlapping(start, end, **extra_criteria)
+            overlapping_activities = self.overlapping(client, start, end, **extra_criteria)
 
             if overlapping_activities:
                 # consolidate all the overlapping activities into one
@@ -131,48 +143,18 @@ class Model(object):
         self.db.events.save(data)
         return data
 
-    def truncate(self, timeline_name, name, start, end):
-        '''Truncate all activities on the same timeline that overlap and are
-           not the same activity.
-           
-           @param timeline_name : str
-               the name of the timeline to scan for overlapping activities
-           @param name : str
-               the name of the activity to match up
-           @param start : datetime
-               the start time of the activity
-           @param end : datetime
-               the end time of the activity'''
+    def create_client(self):
+        '''Create a new client.'''
 
-        extra_criteria = {
-            'timeline' : timeline_name,
-            'name' : { '$ne' : name },
-        }
-        overlapping_activities = self.overlapping(start, end, **extra_criteria)
+        client = dict()
+        self.db.clients.insert(client)
+        return client
 
-        for a in overlapping_activities:
-            if a['end'] < end:
-                a['end'] = start
-
-                self.db.events.save(a)
-
-            elif a['start'] > start:
-                a['start'] = end
-
-                self.db.events.save(a)
-
-            else:
-                # split the activity into two
-                activity1 = self._build_event(timeline_name, a['name'], a['start'], start)
-                activity2 = self._build_event(timeline_name, a['name'], end, a['end'])
-
-                self.db.events.remove(a)
-                self.db.events.save(activity1)
-                self.db.events.save(activity2)
-
-    def log(self, timeline_name, name, start=None, end=None, **kwargs):
+    def log(self, client, timeline_name, name, start=None, end=None, **kwargs):
         '''Log the occurence of an activity to the specified timeline.
 
+           @param client : str
+               the name of the client to which the event belongs
            @param timeline_name : str
                name of the timeline
            @param name : str
@@ -189,16 +171,11 @@ class Model(object):
             end = start
 
         union = kwargs.get('union', True)
-        truncate = kwargs.get('truncate', False)
-
-        data = self._log(timeline_name, name, start, end, union=union)
-        if truncate:
-            self.truncate(timeline_name, name, data['start'], data['end'])
+        data = self._log(client, timeline_name, name, start, end, union=union)
 
         return data
 
-
-    def update(self, timeline_name, name):
+    def update(self, client, timeline_name, name):
         '''Log the continuance of an ongoing activity to the specified timeline
 
            @param timeline_name : str
@@ -209,7 +186,7 @@ class Model(object):
         end = datetime.datetime.utcnow()
         start = end - datetime.timedelta(seconds=self.CONTIGUITY_THRESHOLD)
         
-        data = self.log(timeline_name, name, start=start, end=end)
+        data = self.log(client, timeline_name, name, start=start, end=end)
         return data
         
 

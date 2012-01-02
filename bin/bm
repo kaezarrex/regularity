@@ -11,6 +11,8 @@ from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
 from regularity.table import Table
 
+CLIENT = '123456789' 
+
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
 
@@ -165,7 +167,7 @@ def dot(model, args):
     if not time:
         time = datetime.datetime.utcnow()
 
-    data = model.log(timeline, args.activity, start=time, end=time, union=False)
+    data = model.log(CLIENT, timeline, args.activity, start=time, end=time, union=False)
 
     print data['_id']
 
@@ -188,7 +190,7 @@ def dash(model, args):
             start = min(now, args.time1)
             end = max(now, args.time1)
 
-        data = model.log(timeline, args.activity, start=start, end=end)
+        data = model.log(CLIENT, timeline, args.activity, start=start, end=end)
     else:
 
         start = now
@@ -200,7 +202,7 @@ def dash(model, args):
                 running = False
 
         end = datetime.datetime.utcnow()
-        data = model.log(timeline, args.activity, start=now, end=end)
+        data = model.log(CLIENT, timeline, args.activity, start=now, end=end)
 
     s = EventStats(data)
     print
