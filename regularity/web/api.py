@@ -1,28 +1,35 @@
 import json
+import urlparse
 
 import web
 
 from regularity.model import Model
 model = Model()
 
-def content_type(content_type):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            web.header('Content-Type', content_type)
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
+def encode_json(func):
+    def wrapper(*args, **kwargs):
+        web.header('Content-Type', 'application/json')
+        data = func(*args, **kwargs)
+        return json.dumps(data)
+    return wrapper
 
-JSON_CONTENT_TYPE = 'application/json'
+def parse_data(func):
+    def wrapper(*args, **kwargs):
+        data = web.data()
+        data = urlparse.parse_qs(data)
+        args = args + (data,)
+        return func(*args, **kwargs)
+    return wrapper
 
 class ClientAPI(object):
 
-    @content_type(JSON_CONTENT_TYPE)
-    def POST(self):
+    @encode_json
+    @parse_data
+    def POST(self, data):
         client = model.create_client()
         _id = str(client['_id'])
 
-        return json.dumps(dict(
+        return dict(
             client=_id
-        ))
+        )
 

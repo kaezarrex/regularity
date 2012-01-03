@@ -7,6 +7,7 @@ import math
 from operator import itemgetter
 import re
 
+from regularity.api import API
 from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
 from regularity.table import Table
@@ -153,6 +154,23 @@ def parse_time(time):
 
     raise argparse.ArgumentTypeError('invalid time format')
 
+def init(model, args):
+    '''Initialize the configuration. Store the client information and the
+       server information for all subsequent uses.
+
+       @param model : reularity.model.Model
+           the connection to mongoDB
+       @param args : argparse.Namespace
+           the parsed command line options'''
+
+    if not args.client:
+        # reserve a client through the api
+        api = API('localhost', 8080)
+        data = api.init()
+        print data
+        api.close()
+
+
 def dot(model, args):
     '''Log an activity that has no duration.
 
@@ -296,6 +314,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
+
+    init_parser = subparsers.add_parser('init')
+    init_parser.add_argument('--client')
+    init_parser.add_argument('--host', default='http://localhost')
+    init_parser.add_argument('--port', type=int, default=8080)
+    init_parser.set_defaults(func=init)
 
     dot_parser = subparsers.add_parser('.')
     dot_parser.add_argument('activity')
