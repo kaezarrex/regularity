@@ -2,6 +2,7 @@
 
 import datetime
 from itertools import imap, izip
+import json
 import logging
 import math
 from operator import itemgetter
@@ -13,6 +14,39 @@ from regularity.stats import EventStats
 from regularity.table import Table
 
 CLIENT = '123456789' 
+
+def load_config(path):
+    '''Load the configuration file and return the settings.
+
+       @param path : str
+           the path to the configuration file'''
+
+    try:
+        config_file = open(path, 'r')
+    except IOError:
+        raise BaseException('config file does not exist at %s' % path)
+
+    try:
+        _config = json.load(config_file)
+    except ValueError:
+        raise BaseException('invalid JSON in config file at %s' % path)
+    finally:
+        config_file.close()
+
+    keys = ('client',)
+    config = dict()
+    missing = list()
+
+    for key in keys:
+        if key not in _config:
+            missing.append(key)
+        else:
+            config[key] = _config[key]
+
+    if missing:
+        raise BaseException('config file at %s is missing the following keys: %s' % (path, ', '.join(missing)))
+
+    return config
 
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
@@ -305,6 +339,7 @@ if __name__ == "__main__":
 
     import argparse
     from itertools import compress
+    import os
     import readline
     import time
 
@@ -313,6 +348,8 @@ if __name__ == "__main__":
     from regularity.model import Model
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', default=os.path.expanduser(os.path.join('~', 'regularity.json')))
+
     subparsers = parser.add_subparsers()
 
     init_parser = subparsers.add_parser('init')
@@ -341,6 +378,13 @@ if __name__ == "__main__":
     stats_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
+
+    try:
+        config = load_config(args.config)
+    except BaseException as e:
+        print str(e)
+        sys.exit(1)
+    sys.exit(0)
 
     model = Model()
     args.func(model, args)
