@@ -2,51 +2,18 @@
 
 import datetime
 from itertools import imap, izip
-import json
 import logging
 import math
 from operator import itemgetter
 import re
 
 from regularity.api import API
+from regularity.config import load_config, write_config
 from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
 from regularity.table import Table
 
 CLIENT = '123456789' 
-
-def load_config(path):
-    '''Load the configuration file and return the settings.
-
-       @param path : str
-           the path to the configuration file'''
-
-    try:
-        config_file = open(path, 'r')
-    except IOError:
-        raise BaseException('config file does not exist at %s' % path)
-
-    try:
-        _config = json.load(config_file)
-    except ValueError:
-        raise BaseException('invalid JSON in config file at %s' % path)
-    finally:
-        config_file.close()
-
-    keys = ('client',)
-    config = dict()
-    missing = list()
-
-    for key in keys:
-        if key not in _config:
-            missing.append(key)
-        else:
-            config[key] = _config[key]
-
-    if missing:
-        raise BaseException('config file at %s is missing the following keys: %s' % (path, ', '.join(missing)))
-
-    return config
 
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
@@ -197,12 +164,21 @@ def init(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
-    if not args.client:
-        # reserve a client through the api
-        api = API('localhost', 8080)
-        data = api.init()
-        print data
-        api.close()
+    # reserve a client through the api
+    api = API(args.host, args.port)
+    data = api.init()
+    api.close()
+
+    # write out the preliminary configuration
+    try:
+        write_config(dict(
+            client=data['client'],
+            host=args.host,
+            port=args.port
+        ), args.config)
+    except BaseException as e:
+        print str(e)
+        sys.exit(1)
 
 
 def dot(model, args):
@@ -354,7 +330,7 @@ if __name__ == "__main__":
 
     init_parser = subparsers.add_parser('init')
     init_parser.add_argument('--client')
-    init_parser.add_argument('--host', default='http://localhost')
+    init_parser.add_argument('--host', default='localhost')
     init_parser.add_argument('--port', type=int, default=8080)
     init_parser.set_defaults(func=init)
 
@@ -379,12 +355,21 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    try:
-        config = load_config(args.config)
-    except BaseException as e:
-        print str(e)
-        sys.exit(1)
-    sys.exit(0)
+#    try:
+#        config = load_config(args.config)
+#    except BaseException as e:
+#        print str(e)
+#        sys.exit(1)
+#
+#    try:
+#        write_config({
+#            'client' : 'poopface',
+#            'wontshowup' : 'snarf'
+#        }, '/home/tim/poop.json')
+#    except BaseException as e:
+#        print str(e)
+#
+#    sys.exit(0)
 
     model = Model()
     args.func(model, args)
