@@ -167,7 +167,6 @@ def init(model, args):
     # reserve a client through the api
     api = API(args.host, args.port)
     data = api.init()
-    api.close()
 
     # write out the preliminary configuration
     try:
@@ -177,9 +176,23 @@ def init(model, args):
             port=args.port
         ), args.config)
     except BaseException as e:
+        raise
         print str(e)
         sys.exit(1)
 
+def get_config(config_path):
+    '''Return the configuration in the file specified.
+     
+       @param config_path : str
+           the path to the configuration file'''
+
+    try:
+        config = load_config(config_path)
+    except BaseException as e:
+        print str(e)
+        sys.exit(1)
+
+    return config
 
 def dot(model, args):
     '''Log an activity that has no duration.
@@ -195,7 +208,11 @@ def dot(model, args):
     if not time:
         time = datetime.datetime.utcnow()
 
-    data = model.log(CLIENT, timeline, args.activity, start=time, end=time, union=False)
+    config = get_config(args.config)
+    api = API(config['host'], config['port'], client=config['client'])
+
+    data = api.dot(timeline, args.activity, time)
+    #data = model.log(CLIENT, timeline, args.activity, start=time, end=time, union=False)
 
     print data['_id']
 
@@ -354,22 +371,6 @@ if __name__ == "__main__":
     stats_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
-
-#    try:
-#        config = load_config(args.config)
-#    except BaseException as e:
-#        print str(e)
-#        sys.exit(1)
-#
-#    try:
-#        write_config({
-#            'client' : 'poopface',
-#            'wontshowup' : 'snarf'
-#        }, '/home/tim/poop.json')
-#    except BaseException as e:
-#        print str(e)
-#
-#    sys.exit(0)
 
     model = Model()
     args.func(model, args)

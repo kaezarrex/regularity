@@ -15,8 +15,19 @@ def encode_json(func):
 
 def parse_data(func):
     def wrapper(*args, **kwargs):
-        data = web.data()
-        data = urlparse.parse_qs(data)
+        _data = web.data()
+        _data = urlparse.parse_qs(_data)
+
+        data = dict()
+        for k, v in _data.iteritems():
+            if not isinstance(v, list):
+                data[k] = v
+            
+            if 1 == len(v):
+                data[k] = v[0]
+            else:
+                raise BaseException('key %s in query must not be supplied multiple times' % k)
+
         args = args + (data,)
         return func(*args, **kwargs)
     return wrapper
@@ -33,3 +44,11 @@ class ClientAPI(object):
             client=_id
         )
 
+class DotAPI(object):
+
+    @encode_json
+    @parse_data
+    def POST(self, client, data):
+        print data
+
+        return dict(_id='test id')

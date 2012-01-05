@@ -7,7 +7,8 @@ if '__main__' == __name__:
     from regularity.web import api
 
     urls = (
-        ('/client/create', api.ClientAPI)
+        r'/client/create', api.ClientAPI,
+        r'/client/([a-f0-9]{24})/dot', api.DotAPI,
     )
 
     app = web.application(urls, {})

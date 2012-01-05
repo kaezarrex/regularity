@@ -2,25 +2,51 @@ import httplib
 import json
 import urllib
 
+import requests
+
+from regularity import serializers
+
+def require_client(func):
+    def wrapper(self, *args, **kwargs):
+        if not hasattr(self, 'client') or self.client is None:
+            raise BaseException('client must be set for this call.')
+
+        return func(self, *args, **kwargs)
+    return wrapper
+
 class API(object):
 
-    def __init__(self, host, port):
-        self.connection = httplib.HTTPConnection(host, port)
+    def __init__(self, host, port, client=None):
+        self.base_url = 'http://%s:%d' % (host, port)
+        self.client = client
 
-    def close(self):
-        self.connection.close()
+    def url(self, path):
+        return '%s%s' % (self.base_url, path)
 
     def init(self):
-        headers = {
-            'Content-Type' : 'application/x-www-form-encoded/json',
-            'Accept' : 'application/json'
-        }
+        url = self.url('/client/create')
+        response = requests.post(url)
 
-        self.connection.request('POST', '/client/create', None, headers)
-        response = self.connection.getresponse()
+        if 200 == response.status_code:
+            data = response.content
+            data = json.loads(data)
+            return data
+    
+    @require_client
+    def dot(self, timeline, activity, time): 
+        url = self.url('/client/%s/dot' % self.client)
 
-        data = response.read()
-        data = json.loads(data)
+        time = serializers.datetime(time)
+        data = dict(
+            timeline=timeline,
+            activity=activity,
+            time=time
+        )
 
-        return data
+        response = requests.post(url, data=data)
+
+        if 200 == response.status_code:
+            data = response.content
+            data = json.loads(data)
+            return data
 

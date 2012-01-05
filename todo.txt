@@ -1,20 +1,6 @@
 
-give timelines an allow_overlaps flag
 more intuitive use of bm
 
-timelines : [
-    {
-        name : application,
-        allowOverlap : false
-    }
-]
-
-events : [
-    {
-        timeline : activity,
-        name : poo,
-        start : 2011-11-17 8:00,
-        end : 2011-11-17 8:30,
-    }
-]
+document regularity/api.py
+document regularity/web/api.py
 
