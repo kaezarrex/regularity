@@ -49,4 +49,24 @@ class API(object):
             data = response.content
             data = json.loads(data)
             return data
+    
+    @require_client
+    def dash(self, timeline, activity, start, end): 
+        url = self.url('/client/%s/dash' % self.client)
+
+        start = serializers.datetime(start)
+        end = serializers.datetime(end)
+        data = dict(
+            timeline=timeline,
+            activity=activity,
+            start=start,
+            end=end
+        )
+
+        response = requests.post(url, data=data)
+
+        if 200 == response.status_code:
+            data = response.content
+            data = json.loads(data)
+            return data
 

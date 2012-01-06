@@ -202,17 +202,16 @@ def dot(model, args):
        @param args : argparse.Namespace
            the parsed command line options'''
 
+    config = get_config(args.config)
+    api = API(config['host'], config['port'], client=config['client'])
+
     timeline = 'bm'
     time = args.time
 
     if not time:
         time = datetime.datetime.utcnow()
 
-    config = get_config(args.config)
-    api = API(config['host'], config['port'], client=config['client'])
-
     data = api.dot(timeline, args.activity, time)
-    #data = model.log(CLIENT, timeline, args.activity, start=time, end=time, union=False)
 
     print data['_id']
 
@@ -223,6 +222,9 @@ def dash(model, args):
            the connection to mongoDB
        @param args : argparse.Namespace
            the parsed command line options'''
+
+    config = get_config(args.config)
+    api = API(config['host'], config['port'], client=config['client'])
 
     timeline = 'bm'
     now = datetime.datetime.utcnow()
@@ -235,9 +237,7 @@ def dash(model, args):
             start = min(now, args.time1)
             end = max(now, args.time1)
 
-        data = model.log(CLIENT, timeline, args.activity, start=start, end=end)
     else:
-
         start = now
         running = True
         while running:
@@ -247,32 +247,11 @@ def dash(model, args):
                 running = False
 
         end = datetime.datetime.utcnow()
-        data = model.log(CLIENT, timeline, args.activity, start=now, end=end)
 
-    s = EventStats(data)
+    data = api.dash(timeline, args.activity, start, end)
+
     print
     print data['_id']
-    print 'duration (seconds): %0.2f' % s.idurations_seconds().next()
-
-def timeline(model, args):
-    '''Display a timeline for the time range specified in args.
-
-       @param model : reularity.model.Model
-           the connection to mongoDB
-       @param args : argparse.Namespace
-           the parsed command line options'''
-
-    now = datetime.datetime.utcnow()
-    if args.time2:
-        start = min(args.time1, args.time2)
-        end = max(args.time1, args.time2)
-    else:
-        start = min(args.time1, now)
-        end = max(args.time1, now)
-
-    events = model.overlapping(start, end)
-
-    print '%d events' % len(events)
 
 def stats(model, args):
     '''Print out statistics for the query defined by the command line

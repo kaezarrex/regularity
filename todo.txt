@@ -1,6 +1,9 @@
 
 more intuitive use of bm
 
+more robust error handling in both api files
 document regularity/api.py
 document regularity/web/api.py
+
+make dots first class citizens
 

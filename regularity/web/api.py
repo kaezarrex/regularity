@@ -3,6 +3,7 @@ import urlparse
 
 import web
 
+from regularity import serializers
 from regularity.model import Model
 model = Model()
 
@@ -38,7 +39,7 @@ class ClientAPI(object):
     @parse_data
     def POST(self, data):
         client = model.create_client()
-        _id = str(client['_id'])
+        data['_id'] = str(data['_id'])
 
         return dict(
             client=_id
@@ -49,6 +50,26 @@ class DotAPI(object):
     @encode_json
     @parse_data
     def POST(self, client, data):
-        print data
+        time = serializers.datetime(data['time'])
 
-        return dict(_id='test id')
+        data = model.log(client, data['timeline'], data['activity'], time, time)
+        data['_id'] = str(data['_id'])
+        data['start'] = serializers.datetime(data['start'])
+        data['end'] = serializers.datetime(data['end'])
+
+        return data
+
+class DashAPI(object):
+
+    @encode_json
+    @parse_data
+    def POST(self, client, data):
+        start = serializers.datetime(data['start'])
+        end = serializers.datetime(data['end'])
+
+        data = model.log(client, data['timeline'], data['activity'], start, end)
+        data['_id'] = str(data['_id'])
+        data['start'] = serializers.datetime(data['start'])
+        data['end'] = serializers.datetime(data['end'])
+
+        return data
