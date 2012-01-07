@@ -214,6 +214,7 @@ def dot(model, args):
     data = api.dot(timeline, args.activity, time)
 
     print data['_id']
+    print data['time']
 
 def dash(model, args):
     '''Log an activity that has a duration.
@@ -252,6 +253,8 @@ def dash(model, args):
 
     print
     print data['_id']
+    print data['start']
+    print data['end']
 
 def stats(model, args):
     '''Print out statistics for the query defined by the command line

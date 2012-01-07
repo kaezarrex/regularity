@@ -52,10 +52,11 @@ class DotAPI(object):
     def POST(self, client, data):
         time = serializers.datetime(data['time'])
 
-        data = model.log(client, data['timeline'], data['activity'], time, time)
-        data['_id'] = str(data['_id'])
-        data['start'] = serializers.datetime(data['start'])
-        data['end'] = serializers.datetime(data['end'])
+        _data = model.log(client, data['timeline'], data['activity'], time, time)
+        
+        data = dict()
+        data['_id'] = str(_data['_id'])
+        data['time'] = serializers.datetime(_data['start'])
 
         return data
 
