@@ -7,12 +7,32 @@ from regularity import serializers
 from regularity.model import Model
 model = Model()
 
-def encode_json(func):
-    def wrapper(*args, **kwargs):
-        web.header('Content-Type', 'application/json')
-        data = func(*args, **kwargs)
-        return json.dumps(data)
-    return wrapper
+# TODO make this decorator handle the input and output of the functions it decorates
+#   ie, absorb the functionality of parse_data
+def encode_json(**kwargs):
+    '''Create a decorator for a function that encodes its return value as JSON.
+
+       @param kwargs : dict
+           a mapping of key value to serializer, in case the value is not
+           JSON serializable by default'''
+
+    _serializers = kwargs
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            web.header('Content-Type', 'application/json')
+            data = func(*args, **kwargs)
+
+            # perform any serializations
+            if isinstance(data, dict):
+                for key, value in data.iteritems():
+                    if key in _serializers:
+                        data[key] = _serializers[key](value)
+
+
+            return json.dumps(data)
+        return wrapper
+    return decorator
 
 def parse_data(func):
     def wrapper(*args, **kwargs):
@@ -35,7 +55,7 @@ def parse_data(func):
 
 class ClientAPI(object):
 
-    @encode_json
+    @encode_json()
     @parse_data
     def POST(self, data):
         client = model.create_client()
@@ -47,7 +67,7 @@ class ClientAPI(object):
 
 class DotAPI(object):
 
-    @encode_json
+    @encode_json(time=serializers.datetime)
     @parse_data
     def POST(self, client, data):
         time = serializers.datetime(data['time'])
@@ -56,13 +76,13 @@ class DotAPI(object):
         
         data = dict()
         data['_id'] = str(_data['_id'])
-        data['time'] = serializers.datetime(_data['start'])
+        data['time'] = _data['start']
 
         return data
 
 class DashAPI(object):
 
-    @encode_json
+    @encode_json(start=serializers.datetime, end=serializers.datetime)
     @parse_data
     def POST(self, client, data):
         start = serializers.datetime(data['start'])
@@ -70,7 +90,5 @@ class DashAPI(object):
 
         data = model.log(client, data['timeline'], data['activity'], start, end)
         data['_id'] = str(data['_id'])
-        data['start'] = serializers.datetime(data['start'])
-        data['end'] = serializers.datetime(data['end'])
 
         return data
