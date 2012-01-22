@@ -10,6 +10,7 @@ if '__main__' == __name__:
         r'/client/create', api.ClientAPI,
         r'/client/([a-f0-9]{24})/dot', api.DotAPI,
         r'/client/([a-f0-9]{24})/dash', api.DashAPI,
+        r'/client/([a-f0-9]{24})/defer', api.DeferAPI,
     )
 
     app = web.application(urls, {})

@@ -7,3 +7,7 @@ document regularity/web/api.py
 
 make dots first class citizens
 
+make code consistent
+ * sometimes docs are called 'data', sometime 'dot'/'dash'
+
+refactor model.py - there is some common code that could be DRY'ed

@@ -95,4 +95,20 @@ class API(object):
         ))
 
         return data
+    
+    @require_client
+    def defer(self, timeline, activity, start): 
+        url = self.url('/client/%s/defer' % self.client)
+
+        data = dict(
+            timeline=timeline,
+            activity=activity,
+            start=start,
+        )
+
+        data = post(url, data=data, serializers=dict(
+            start=serializers.datetime,
+        ))
+
+        return data
 

@@ -256,6 +256,29 @@ def dash(model, args):
     print data['start']
     print data['end']
 
+def defer(model, args):
+    '''Log the start time of an ongoing activity, to be terminated at another
+       time.
+
+       @param model : reularity.model.Model
+           the connection to mongoDB
+       @param args : argparse.Namespace
+           the parsed command line options'''
+
+    config = get_config(args.config)
+    api = API(config['host'], config['port'], client=config['client'])
+
+    timeline = 'bm'
+    start = args.time
+
+    if not start:
+        start = datetime.datetime.utcnow()
+
+    data = api.defer(timeline, args.activity, start)
+
+    print data['_id']
+    print data['start']
+
 def stats(model, args):
     '''Print out statistics for the query defined by the command line
        parameters.
@@ -343,6 +366,11 @@ if __name__ == "__main__":
     dash_parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
     dash_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=dash)
+
+    dash_parser = subparsers.add_parser('?')
+    dash_parser.add_argument('activity')
+    dash_parser.add_argument('time', type=parse_time, nargs='?', metavar='time')
+    dash_parser.set_defaults(func=defer)
 
     stats_parser = subparsers.add_parser('stats')
     stats_parser.add_argument('activity', nargs='?')

@@ -1,0 +1,6 @@
+
+events will be split into dots and dashes
+need to detect them based on duration
+  0 duration -> dot
+  >0 duration -> dash
+

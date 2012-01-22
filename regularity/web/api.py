@@ -28,6 +28,8 @@ def encode_json(**kwargs):
                 value = value[0]
                 if key in _serializers:
                     data[key] = _serializers[key](value)
+                else:
+                    data[key] = value
 
             args = args + (data,)
             data = func(*args, **kwargs)
@@ -47,7 +49,7 @@ class ClientAPI(object):
 
     @encode_json()
     def POST(self, data):
-        client = model.create_client()
+        client = model.client()
         data['_id'] = str(data['_id'])
 
         return dict(
@@ -62,11 +64,8 @@ class DotAPI(object):
         activity = data['activity']
         time = data['time']
 
-        _data = model.log(client, timeline, activity, time, time)
-        
-        data = dict()
-        data['_id'] = str(_data['_id'])
-        data['time'] = _data['start']
+        dot = model.dot(client, timeline, activity, time)
+        dot['_id'] = str(dot['_id'])
 
         return data
 
@@ -79,8 +78,22 @@ class DashAPI(object):
         start = data['start']
         end = data['end']
 
-        data = model.log(client, timeline, activity, start, end)
+        data = model.dash(client, timeline, activity, start, end)
         data['_id'] = str(data['_id'])
 
         return data
+
+class DeferAPI(object):
+
+    @encode_json(start=serializers.datetime)
+    def POST(self, client, data):
+        timeline = data['timeline']
+        activity = data['activity']
+        start = data['start']
+        
+        data = model.defer(client, timeline, activity, start)
+        data['_id'] = str(data['_id'])
+
+        return data
+
 
