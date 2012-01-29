@@ -153,6 +153,24 @@ def parse_time(time):
 
     raise argparse.ArgumentTypeError('invalid time format')
 
+def print_table(data, *args):
+    '''Print the data in a tabular form.
+
+       @param data : iterable(dict)
+           an iterable of dicts
+       @param args : positional parameters
+           the keys to display'''
+
+    rows = list()
+    rows.append(args)
+    for d in data:
+        row = tuple(d[arg] for arg in args)
+        rows.append(row)
+
+    table = Table(*rows)
+
+    print '\n'.join(table.iformatted_rows(column_joiner='   '))
+
 def init(model, args):
     '''Initialize the configuration. Store the client information and the
        server information for all subsequent uses.
@@ -218,7 +236,11 @@ def dot(model, args):
     else:
         data = api.dots(timeline)
 
-        print data
+        if data:
+            print_table(data, 'name', 'time')
+        else:
+            print 'there are no dots yet'
+
 
 def dash(model, args):
     '''Log an activity that has a duration.
@@ -265,7 +287,10 @@ def dash(model, args):
     else:
         data = api.dashes(timeline)
 
-        print data
+        if data:
+            print_table(data, 'name', 'start', 'end')
+        else:
+            print 'there are no dashes yet'
 
 def pending(model, args):
     '''Log the start time of an ongoing activity, to be terminated at another
@@ -297,7 +322,11 @@ def pending(model, args):
 
     else:
         data = api.pendings(timeline)
-        print data
+
+        if data:
+            print_table(data, 'name', 'start')
+        else:
+            print 'there are no pendings'
 
 
 def stats(model, args):
