@@ -91,7 +91,6 @@ class DotAPI(object):
         time = data['time']
 
         dot = model.dot(client, timeline, activity, time)
-        dot['_id'] = str(dot['_id'])
 
         return dot
 
@@ -112,7 +111,6 @@ class DashAPI(object):
         end = data['end']
 
         dash = model.dash(client, timeline, activity, start, end)
-        dash['_id'] = str(dash['_id'])
 
         return dash
 
@@ -131,7 +129,6 @@ class PendingAPI(object):
         start = data['start']
         
         pending = model.pending(client, timeline, activity, start)
-        pending['_id'] = str(pending['_id'])
 
         return pending
 
