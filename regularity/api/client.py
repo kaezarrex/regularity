@@ -125,6 +125,22 @@ class API(object):
         return data
     
     @require_client
+    def dashes(self, timeline):
+        '''Get the dashes for this client.
+
+           @param timeline : str
+               the timeline the event belongs to'''
+
+        url = self.url('/client/%s/dash' % self.client)
+
+        data = request(url, 'get', serializers=dict(
+            start=_serializers.datetime,
+            end=_serializers.datetime
+        ))
+
+        return data
+    
+    @require_client
     def dash(self, timeline, activity, start, end): 
         '''Send a ranged event (one that has a duration) to the server.
 
@@ -152,6 +168,21 @@ class API(object):
         ))
 
         return data
+
+    @require_client
+    def pendings(self, timeline):
+        '''List the pendings for this client.
+
+           @param timeline : str
+               the timeline the events belong to'''
+
+        url = self.url('/client/%s/pending' % self.client)
+
+        data = request(url, 'get', serializers=dict(
+            start=_serializers.datetime
+        ))
+
+        return data
     
     @require_client
     def pending(self, timeline, activity, start): 
@@ -175,21 +206,6 @@ class API(object):
 
         data = request(url, 'post', data=data, serializers=dict(
             start=_serializers.datetime,
-        ))
-
-        return data
-
-    @require_client
-    def pendings(self, timeline):
-        '''List the pendings for this client.
-
-           @param timeline : str
-               the timeline the events belong to'''
-
-        url = self.url('/client/%s/pending' % self.client)
-
-        data = request(url, 'get', serializers=dict(
-            start=_serializers.datetime
         ))
 
         return data

@@ -234,33 +234,40 @@ def dash(model, args):
     api = API(config['host'], config['port'], client=config['client'])
 
     timeline = 'bm'
-    now = datetime.datetime.utcnow()
 
-    if args.time1:
-        if args.time2:
-            start = min(args.time1, args.time2)
-            end = max(args.time1, args.time2)
+    if args.activity:
+        now = datetime.datetime.utcnow()
+
+        if args.time1:
+            if args.time2:
+                start = min(args.time1, args.time2)
+                end = max(args.time1, args.time2)
+            else:
+                start = min(now, args.time1)
+                end = max(now, args.time1)
+
         else:
-            start = min(now, args.time1)
-            end = max(now, args.time1)
+            start = now
+            running = True
+            while running:
+                try:
+                    time.sleep(1.0)
+                except KeyboardInterrupt:
+                    running = False
 
+            end = datetime.datetime.utcnow()
+
+        data = api.dash(timeline, args.activity, start, end)
+
+        print
+        print data['_id']
+        print data['start']
+        print data['end']
+    
     else:
-        start = now
-        running = True
-        while running:
-            try:
-                time.sleep(1.0)
-            except KeyboardInterrupt:
-                running = False
+        data = api.dashes(timeline)
 
-        end = datetime.datetime.utcnow()
-
-    data = api.dash(timeline, args.activity, start, end)
-
-    print
-    print data['_id']
-    print data['start']
-    print data['end']
+        print data
 
 def pending(model, args):
     '''Log the start time of an ongoing activity, to be terminated at another
@@ -375,7 +382,7 @@ if __name__ == "__main__":
     dot_parser.set_defaults(func=dot)
 
     dash_parser = subparsers.add_parser('-')
-    dash_parser.add_argument('activity')
+    dash_parser.add_argument('activity', nargs='?')
     dash_parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
     dash_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=dash)
