@@ -7,7 +7,7 @@ import math
 from operator import itemgetter
 import re
 
-from regularity.api import API
+from regularity.api.client import API
 from regularity.config import load_config, write_config
 from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
