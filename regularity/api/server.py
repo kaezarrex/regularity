@@ -91,7 +91,7 @@ class PendingAPI(object):
         activity = data['activity']
         start = data['start']
         
-        pending = model.defer(client, timeline, activity, start)
+        pending = model.pending(client, timeline, activity, start)
         pending['_id'] = str(pending['_id'])
 
         return pending

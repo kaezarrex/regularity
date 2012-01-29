@@ -152,7 +152,7 @@ class API(object):
            @param start : datetime
                the UTC time of the start of the activity'''
 
-        url = self.url('/client/%s/defer' % self.client)
+        url = self.url('/client/%s/pending' % self.client)
 
         data = dict(
             timeline=timeline,
