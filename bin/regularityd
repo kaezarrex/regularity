@@ -4,22 +4,24 @@ import datetime
 import dbus
 import dbus.mainloop.glib
 import gobject
-import gtk
 import logging
-import traceback
-import wnck
+import os
+import sys
 
-from regularity.model import Model
+from regularity.api.client import API
+from regularity.config import load_config
 
 class RegularityDaemon(object):
 
-    def __init__(self, frequency=1.0):
+    def __init__(self, api):
         '''Create a RegularityDaemon, which logs to the database the active
            application over time. It will also log when the screensaver becomes
            active.
-           
-           @param frequency : float 
-               the frequency at which the daemon writes to the database'''
+
+           @param api : regularity.api.client.API
+               the connection to the database'''
+
+        self.api = api
 
         # create the dbus main loop, set it as the default dbus main loop
         dbus_main_loop = dbus.mainloop.glib.DBusGMainLoop()
@@ -28,16 +30,16 @@ class RegularityDaemon(object):
         # create a bus object, and attach the signal receivers
         self.bus = dbus.SessionBus()
         self.bind_events()
-
-        # create the connection to the mongoDB database
-        self.model = Model()
-        self.frequency = frequency
-
-        # initialize default active values
-        self.active = dict(
-            application=self.active_application(),
-            screensaver=self.screensaver_state()
+        
+        self.timestamps = dict(
+            application=datetime.datetime.utcnow(),
+            screensaver=datetime.datetime.utcnow()
         )
+
+    def path_to_application(self, path):
+        '''Resolve an application dbus object path to a name.'''
+
+        return self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
 
     def on_active_application_changed(self, from_path, to_path):
         '''The signal handler for active application changes.
@@ -47,10 +49,15 @@ class RegularityDaemon(object):
            @param to_path : dbus.String
                the dbus path of the window we are switching to'''
 
-        self.active['application'] = None
-        if to_path:
-            self.active['application'] = self.path_to_application(to_path)
+        start = self.timestamps['application']
+        now = datetime.datetime.utcnow()
 
+        if from_path:
+            application = self.path_to_application(from_path)
+            logging.info('switching away from application: %s' % application)
+            self.api.dash('regularityd', from_path, start, now)
+
+        self.timestamps['application'] = now
 
     def bind_active_application_changed(self):
         '''Bind to the signal that fires when the active application changes.'''
@@ -67,8 +74,15 @@ class RegularityDaemon(object):
            @param screensaver_active : dbus.Boolean
                whether the screensaver is active right now'''
 
-        self.active['screensaver'] = bool(screensaver_active)
+        logging.info('screensaver active: %s' % screensaver_active)
+        now = datetime.datetime.utcnow()
 
+        if not screensaver_active:
+            start = self.timestamps['screensaver']
+
+            self.api.dash('screensaver', 'screensaver', start, now)
+
+        self.timestamps['screensaver'] = now
 
     def bind_screensaver_active_changed(self):
         '''Bind to the signal that fires when the screensaver state changes.'''
@@ -85,72 +99,9 @@ class RegularityDaemon(object):
         self.bind_active_application_changed()
         self.bind_screensaver_active_changed()
 
-    def path_to_application(self, path):
-        '''Resolve an application dbus object path to a name.'''
-
-        return self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
-
-    def active_application_path(self):
-        '''Get the dbus object path of the active application.'''
-
-        return self.bus.call_blocking(
-            'org.ayatana.bamf', 
-            '/org/ayatana/bamf/matcher', 
-            'org.ayatana.bamf.matcher', 
-            'ActiveApplication', 
-            None, 
-            tuple()
-        )
-
-    def active_application(self):
-        '''Get the name of the active application.'''
-
-        application_path = self.active_application_path()
-        if application_path:
-            application = self.path_to_application(application_path)
-
-            if application:
-                return application
-
-        return None
-
-    def screensaver_state(self):
-        '''Return the state of the screensaver, True meaning it's on and False
-           meaning it is not.'''
-
-        return bool(self.bus.call_blocking(
-            'org.gnome.ScreenSaver', 
-            '/org/gnome/ScreenSaver', 
-            'org.gnome.ScreenSaver', 
-            'GetActive', 
-            None,
-            tuple()
-        ))
-
-    def update(self):
-        '''Log the current active states to the database.'''
-
-        application = self.active['application']
-        if application:
-            logging.debug('active application: %s' % application)
-            self.model.update('application', application)
-
-        screensaver = self.active['screensaver']
-        if screensaver:
-            logging.debug('screensaver active: %s' % screensaver)
-            self.model.update('screensaver', 'screensaver')
-
-        return True
-
     def run(self):
         '''Log the initial state, set up the timeout, and begin the main loop.'''
            
-        logging.debug('initializing active application: %s' % self.active['application'])
-        logging.debug('initializing screensaver state: %s' % self.active['screensaver'])
-
-        self.update()
-
-        gobject.timeout_add(int(self.frequency * 1000), self.update)
         gobject.MainLoop().run()
 
 if __name__ == "__main__":
@@ -158,6 +109,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', default=os.path.expanduser(os.path.join('~', 'regularity.json')))
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('-f', '--frequency', metavar='seconds', type=float, default=1.0)
 
@@ -172,8 +124,14 @@ if __name__ == "__main__":
             level=logging.INFO
         )
 
-    regularityd = RegularityDaemon(frequency=args.frequency)
+    try:
+        config = load_config(args.config)
+    except BaseException as e:
+        print str(e)
+        sys.exit(1)
+
+    api = API(config['host'], config['port'], client=config['client'])
+
+    regularityd = RegularityDaemon(api)
     regularityd.run()
-
-
     
