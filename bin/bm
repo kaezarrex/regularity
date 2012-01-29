@@ -13,8 +13,6 @@ from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
 from regularity.table import Table
 
-CLIENT = '123456789' 
-
 def offset_minute(offset):
     '''Parse an offset string to see if it describes a minute offset.
 
