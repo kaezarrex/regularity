@@ -7,6 +7,25 @@ import serializers
 from regularity.model import Model
 model = Model()
 
+
+def serialize_dict(data, **kwargs):
+    '''(De)Serialize the values in the dictionary, using the serializers passed
+       in as keyword arguments.
+
+       @param d : dict
+           the dictionary whose values are to be transformed
+       @param kwargs : keyword arguments
+           serializers to use'''
+
+    new_data = dict()
+    for key, value in data.iteritems():
+        if key in _serializers:
+            new_data[key] = _serializers[key](value)
+        else:
+            new_data[key] = value
+
+    return new_data
+
 def encode_json(**kwargs):
     '''Create a decorator for a function that encodes its return value as JSON.
 
@@ -34,11 +53,12 @@ def encode_json(**kwargs):
             args = args + (data,)
             data = func(*args, **kwargs)
 
-            # assume that the function returns a dict
-            for key, value in data.iteritems():
-                if key in _serializers:
-                    data[key] = _serializers[key](value)
-
+            # assume that the function returns a dict or iterable - if it is an
+            # iterable, assume each object in it is a dict
+            if isinstance(data, dict):
+                data = serialize_dict(data, **_serializers)
+            elif hasattr(data, '__iter__'):
+                data = list(serialize_dict(d, **_serializers) for d in data)
 
             web.header('Content-Type', 'application/json')
             return json.dumps(data)
@@ -84,6 +104,12 @@ class DashAPI(object):
         return dash
 
 class PendingAPI(object):
+
+    @encode_json(start=serializers.datetime)
+    def GET(self, client, data):
+        pendings = model.pendings(client)
+
+        return pendings
 
     @encode_json(start=serializers.datetime)
     def POST(self, client, data):
