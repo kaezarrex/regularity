@@ -19,8 +19,8 @@ def serialize_dict(data, **kwargs):
 
     new_data = dict()
     for key, value in data.iteritems():
-        if key in _serializers:
-            new_data[key] = _serializers[key](value)
+        if key in kwargs:
+            new_data[key] = kwargs[key](value)
         else:
             new_data[key] = value
 
@@ -78,7 +78,7 @@ class ClientAPI(object):
 
 class DotAPI(object):
 
-    @encode_json(time=serializers.datetime)
+    @encode_json(_id=serializers.object_id, time=serializers.datetime)
     def POST(self, client, data):
         timeline = data['timeline']
         activity = data['activity']
@@ -91,7 +91,14 @@ class DotAPI(object):
 
 class DashAPI(object):
 
-    @encode_json(start=serializers.datetime, end=serializers.datetime)
+    @encode_json(_id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
+    def GET(self, client, data):
+        dashes = model.dashes(client)
+
+        return dashes
+
+
+    @encode_json(_id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
     def POST(self, client, data):
         timeline = data['timeline']
         activity = data['activity']
@@ -105,13 +112,13 @@ class DashAPI(object):
 
 class PendingAPI(object):
 
-    @encode_json(start=serializers.datetime)
+    @encode_json(_id=serializers.object_id, start=serializers.datetime)
     def GET(self, client, data):
         pendings = model.pendings(client)
 
         return pendings
 
-    @encode_json(start=serializers.datetime)
+    @encode_json(_id=serializers.object_id, start=serializers.datetime)
     def POST(self, client, data):
         timeline = data['timeline']
         activity = data['activity']
