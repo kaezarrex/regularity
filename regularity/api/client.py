@@ -85,6 +85,21 @@ class API(object):
         return data
     
     @require_client
+    def dots(self, timeline):
+        '''List the dots on the server for this client.
+           
+           @param timeline : str
+               the timeline the event belongs to'''
+
+        url = self.url('/client/%s/dot' % self.client)
+
+        data = request(url, 'get', serializers=dict(
+            time=_serializers.datetime
+        ))
+
+        return data
+    
+    @require_client
     def dot(self, timeline, activity, time): 
         '''Send a dot (an instantaneous event) to the server. 
            

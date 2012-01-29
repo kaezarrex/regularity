@@ -206,15 +206,21 @@ def dot(model, args):
     api = API(config['host'], config['port'], client=config['client'])
 
     timeline = 'bm'
-    time = args.time
 
-    if not time:
-        time = datetime.datetime.utcnow()
+    if args.activity:
+        time = args.time
 
-    data = api.dot(timeline, args.activity, time)
+        if not time:
+            time = datetime.datetime.utcnow()
 
-    print data['_id']
-    print data['time']
+        data = api.dot(timeline, args.activity, time)
+
+        print data['_id']
+        print data['time']
+    else:
+        data = api.dots(timeline)
+
+        print data
 
 def dash(model, args):
     '''Log an activity that has a duration.
@@ -364,7 +370,7 @@ if __name__ == "__main__":
     init_parser.set_defaults(func=init)
 
     dot_parser = subparsers.add_parser('.')
-    dot_parser.add_argument('activity')
+    dot_parser.add_argument('activity', nargs='?')
     dot_parser.add_argument('time', type=parse_time, nargs='?')
     dot_parser.set_defaults(func=dot)
 
