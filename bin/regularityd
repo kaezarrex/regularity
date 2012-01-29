@@ -55,7 +55,7 @@ class RegularityDaemon(object):
         if from_path:
             application = self.path_to_application(from_path)
             logging.info('switching away from application: %s' % application)
-            self.api.dash('regularityd', from_path, start, now)
+            self.api.dash('regularityd', application, start, now)
 
         self.timestamps['application'] = now
 
