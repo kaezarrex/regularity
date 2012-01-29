@@ -79,6 +79,12 @@ class ClientAPI(object):
 class DotAPI(object):
 
     @encode_json(_id=serializers.object_id, time=serializers.datetime)
+    def GET(self, client, data):
+        dots = model.dots(client)
+
+        return dots
+
+    @encode_json(_id=serializers.object_id, time=serializers.datetime)
     def POST(self, client, data):
         timeline = data['timeline']
         activity = data['activity']
