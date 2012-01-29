@@ -32,7 +32,7 @@ class Table(object):
         self.formats[column] = format_
     
     def set_column_pad_left(self, column, pad_left):
-        '''Sets the format string for a column.
+        '''Sets the padding for a column.
 
            @param column : int
                the index of the column
