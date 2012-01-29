@@ -4,7 +4,7 @@ import urllib
 
 import requests
 
-import serializers
+import serializers as _serializers
 
 def require_client(func):
     '''Wrap a function to check that requires the API to be bound to a client.
@@ -21,7 +21,7 @@ def require_client(func):
         return func(self, *args, **kwargs)
     return wrapper
 
-def post(url, data=None, serializers=None):
+def request(url, method, data=None, serializers=None):
     '''Simple function for making a POST request and handling different status
        codes.
 
@@ -33,20 +33,18 @@ def post(url, data=None, serializers=None):
            a mapping of serializer functions for any fields that need so'''
 
     # serialize any fields that need so
-    if serializers:
-        for key, fn in serializers.iteritems():
-            data[key] = fn(data[key])
+    if data:
+        data = _serializers.serialize(data, **serializers)
 
-    response = requests.post(url, data=data)
+    method_fn = getattr(requests, method)
+    response = method_fn(url, data=data)
 
     if 200 == response.status_code:
         data = response.content
         data = json.loads(data)
 
-        # deserialize any fields that need so
-        if serializers:
-            for key, fn in serializers.iteritems():
-                data[key] = fn(data[key])
+        if data:
+            data = _serializers.serialize(data, **serializers)
 
         return data
     else:
@@ -82,7 +80,7 @@ class API(object):
 
         url = self.url('/client/create')
 
-        data = post(url)
+        data = request(url, 'post')
 
         return data
     
@@ -105,8 +103,8 @@ class API(object):
             time=time
         )
 
-        data = post(url, data=data, serializers=dict(
-            time=serializers.datetime
+        data = request(url, 'post', data=data, serializers=dict(
+            time=_serializers.datetime
         ))
 
         return data
@@ -133,9 +131,9 @@ class API(object):
             end=end
         )
 
-        data = post(url, data=data, serializers=dict(
-            start=serializers.datetime,
-            end=serializers.datetime
+        data = request(url, 'post', data=data, serializers=dict(
+            start=_serializers.datetime,
+            end=_serializers.datetime
         ))
 
         return data
@@ -160,8 +158,23 @@ class API(object):
             start=start,
         )
 
-        data = post(url, data=data, serializers=dict(
-            start=serializers.datetime,
+        data = request(url, 'post', data=data, serializers=dict(
+            start=_serializers.datetime,
+        ))
+
+        return data
+
+    @require_client
+    def pendings(self, timeline):
+        '''List the pendings for this client.
+
+           @param timeline : str
+               the timeline the events belong to'''
+
+        url = self.url('/client/%s/pending' % self.client)
+
+        data = request(url, 'get', serializers=dict(
+            start=_serializers.datetime
         ))
 
         return data

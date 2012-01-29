@@ -55,10 +55,7 @@ def encode_json(**kwargs):
 
             # assume that the function returns a dict or iterable - if it is an
             # iterable, assume each object in it is a dict
-            if isinstance(data, dict):
-                data = serialize_dict(data, **_serializers)
-            elif hasattr(data, '__iter__'):
-                data = list(serialize_dict(d, **_serializers) for d in data)
+            data = serializers.serialize(data, **_serializers)
 
             web.header('Content-Type', 'application/json')
             return json.dumps(data)

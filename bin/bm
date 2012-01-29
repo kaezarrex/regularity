@@ -269,15 +269,22 @@ def pending(model, args):
     api = API(config['host'], config['port'], client=config['client'])
 
     timeline = 'bm'
-    start = args.time
 
-    if not start:
-        start = datetime.datetime.utcnow()
+    if args.activity:
+        start = args.time
 
-    data = api.pending(timeline, args.activity, start)
+        if not start:
+            start = datetime.datetime.utcnow()
 
-    print data['_id']
-    print data['start']
+        data = api.pending(timeline, args.activity, start)
+
+        print data['_id']
+        print data['start']
+
+    else:
+        data = api.pendings(timeline)
+        print data
+
 
 def stats(model, args):
     '''Print out statistics for the query defined by the command line
@@ -368,7 +375,7 @@ if __name__ == "__main__":
     dash_parser.set_defaults(func=dash)
 
     dash_parser = subparsers.add_parser('?')
-    dash_parser.add_argument('activity')
+    dash_parser.add_argument('activity', nargs='?')
     dash_parser.add_argument('time', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=pending)
 

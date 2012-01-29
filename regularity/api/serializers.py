@@ -5,6 +5,42 @@ from pymongo.objectid import ObjectId
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 
+def serialize_dict(data, **kwargs):
+    '''(De)Serialize the values in the dictionary, using the serializers passed
+       in as keyword arguments.
+
+       @param d : dict
+           the dictionary whose values are to be transformed
+       @param kwargs : keyword arguments
+           serializers to use'''
+
+    new_data = dict()
+    for key, value in data.iteritems():
+        if key in kwargs:
+            new_data[key] = kwargs[key](value)
+        else:
+            new_data[key] = value
+
+    return new_data
+
+def serialize(o, **kwargs):
+    '''(De)serialize the object with the serializers passed in as keyword
+       arguments. The object may be a dict, or an iterable of dicts.
+
+       @param o : dict | iterable
+           the object to serialize
+       @param kwargs : keyword arguments
+           serializers to use'''
+
+    if o is None:
+        return None
+    elif isinstance(o, dict):
+        return serialize_dict(o, **kwargs)
+    elif hasattr(o, '__iter__'):
+        return tuple(serialize_dict(d, **kwargs) for d in o)
+
+    raise BaseException('object is not list or iterable')
+
 def object_id(o):
     '''(De)serialize the object to/from ObjectID/str.
 
