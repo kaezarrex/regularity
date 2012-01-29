@@ -59,8 +59,8 @@ class Model(object):
 
         return data
     
-    def _build_defer(self, client, timeline_name, name, start):
-        '''Helper function for building a deffered object to be saved to the 
+    def _build_pending(self, client, timeline_name, name, start):
+        '''Helper function for building a pending object to be saved to the 
            database.
 
            @param client : str
@@ -281,7 +281,7 @@ class Model(object):
 
         return overlapping
 
-    def defer(self, client, timeline_name, name, start=None):
+    def pending(self, client, timeline_name, name, start=None):
         '''Log the beginning of a ranged activity to the specified timeline.
 
            @param client : str
@@ -293,26 +293,26 @@ class Model(object):
            @param start : optional, datetime
                the start time of the activity, defaults to now'''
 
-        # look for an existing defer firt
-        defer = self.db.defers.find_one({
+        # look for an existing pending first
+        pending = self.db.pendings.find_one({
             'client' : client,
             'timeline' : timeline_name,
             'name' : name,
         })
 
-        if defer is not None:
-            raise BaseException('defer %s already exists' % name)
+        if pending is not None:
+            raise BaseException('pending %s already exists' % name)
 
         if start is None:
             start = datetime.datetime.utcnow()
 
-        defer = self._build_defer(client, timeline_name, name, start)
-        self.db.defers.insert(defer)
+        pending = self._build_pending(client, timeline_name, name, start)
+        self.db.pendings.insert(pending)
 
-        return defer
+        return pending
 
-    def defers(self, client, **kwargs):
-        '''Perform a general query for defers. By default, will return all
+    def pendings(self, client, **kwargs):
+        '''Perform a general query for pendings. By default, will return all
            events unless filtering criteria are specified in kwargs.
            
            @param client : str
@@ -335,6 +335,6 @@ class Model(object):
         if timeline:
             criteria['timeline'] = timeline
 
-        data = self.db.defers.find(criteria)
+        data = self.db.pendings.find(criteria)
         return tuple(data)
 
