@@ -67,7 +67,7 @@ class DotAPI(object):
         dot = model.dot(client, timeline, activity, time)
         dot['_id'] = str(dot['_id'])
 
-        return data
+        return dot
 
 class DashAPI(object):
 
@@ -78,12 +78,12 @@ class DashAPI(object):
         start = data['start']
         end = data['end']
 
-        data = model.dash(client, timeline, activity, start, end)
-        data['_id'] = str(data['_id'])
+        dash = model.dash(client, timeline, activity, start, end)
+        dash['_id'] = str(dash['_id'])
 
-        return data
+        return dash
 
-class DeferAPI(object):
+class PendingAPI(object):
 
     @encode_json(start=serializers.datetime)
     def POST(self, client, data):
@@ -91,9 +91,9 @@ class DeferAPI(object):
         activity = data['activity']
         start = data['start']
         
-        data = model.defer(client, timeline, activity, start)
-        data['_id'] = str(data['_id'])
+        pending = model.defer(client, timeline, activity, start)
+        pending['_id'] = str(pending['_id'])
 
-        return data
+        return pending
 
 
