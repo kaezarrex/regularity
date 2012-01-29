@@ -206,6 +206,7 @@ class API(object):
 
         data = request(url, 'post', data=data, serializers=dict(
             start=_serializers.datetime,
+            end=_serializers.datetime,
         ))
 
         return data

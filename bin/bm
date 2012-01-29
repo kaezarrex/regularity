@@ -293,6 +293,9 @@ def pending(model, args):
 
         print data['_id']
         print data['start']
+        if 'end' in data:
+            print data['end']
+
 
     else:
         data = api.pendings(timeline)

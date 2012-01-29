@@ -281,7 +281,7 @@ class Model(object):
 
         return overlapping
 
-    def pending(self, client, timeline_name, name, start=None):
+    def pending(self, client, timeline_name, name, time=None):
         '''Log the beginning of a ranged activity to the specified timeline.
 
            @param client : str
@@ -290,8 +290,8 @@ class Model(object):
                name of the timeline
            @param name : str
                name of the activity
-           @param start : optional, datetime
-               the start time of the activity, defaults to now'''
+           @param time : optional, datetime
+               the start/end time of the activity, defaults to now'''
 
         # look for an existing pending first
         pending = self.db.pendings.find_one({
@@ -301,15 +301,21 @@ class Model(object):
         })
 
         if pending is not None:
-            raise BaseException('pending %s already exists' % name)
+            self.db.pendings.remove(pending)
 
-        if start is None:
-            start = datetime.datetime.utcnow()
+            dash = self.dash(client, pending['timeline'], pending['name'], pending['start'], time)
 
-        pending = self._build_pending(client, timeline_name, name, start)
-        self.db.pendings.insert(pending)
+            return dash
 
-        return pending
+        else:
+
+            if time is None:
+                time = datetime.datetime.utcnow()
+
+            pending = self._build_pending(client, timeline_name, name, time)
+            self.db.pendings.insert(pending)
+
+            return pending
 
     def pendings(self, client, **kwargs):
         '''Perform a general query for pendings. By default, will return all

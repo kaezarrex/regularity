@@ -119,7 +119,7 @@ class PendingAPI(object):
 
         return pendings
 
-    @encode_json(_id=serializers.object_id, start=serializers.datetime)
+    @encode_json(_id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
     def POST(self, client, data):
         timeline = data['timeline']
         activity = data['activity']
