@@ -4,7 +4,7 @@ import urllib
 
 import requests
 
-from regularity import serializers
+import serializers
 
 def require_client(func):
     '''Wrap a function to check that requires the API to be bound to a client.

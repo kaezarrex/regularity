@@ -3,7 +3,7 @@ import urlparse
 
 import web
 
-from regularity import serializers
+import serializers
 from regularity.model import Model
 model = Model()
 
