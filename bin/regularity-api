@@ -29,16 +29,8 @@ if '__main__' == __name__:
     with open(config_path, 'r') as config_file:
         try:
             config = json.load(config_file)
-            
-            db = config.get('db')
-            if not db:
-                logging.critical('missing "db" key in config')
-                sys.exit(1)
 
-            for key in ('host', 'port', 'user', 'password', 'database'):
-                if key not in db:
-                    logging.critical('db["%s"] missing from config' % key)
-                    sys.exit(1)
+            db = config['db']
 
         except (Exception, BaseException) as e:
             logging.critical(str(e))
