@@ -4,9 +4,9 @@ import urlparse
 import web
 
 import serializers
-from regularity.model import Model
-model = Model()
 
+# this will be populated by the main executable
+model = None
 
 def serialize_dict(data, **kwargs):
     '''(De)Serialize the values in the dictionary, using the serializers passed

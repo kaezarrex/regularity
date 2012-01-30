@@ -5,13 +5,21 @@ class Model(object):
 
     CONTIGUITY_THRESHOLD = 5 # seconds
 
-    def __init__(self, host='localhost'):
+    def __init__(self, host='localhost', port=27017, user=None, password=None, database='regularity'):
         '''Create a connection to mongoDB
 
-           @param host : optional, str, the host of the mongoDB server'''
+           @param host : optional, str
+               the host of the mongoDB server'''
 
-        connection = pymongo.Connection(host)
-        self.db = connection.regularity
+        connection = pymongo.Connection(host=host, port=port)
+        db = pymongo.database.Database(connection, database)
+
+        if user and password:
+            success = db.authenticate(user, password)
+            if not success:
+                raise BaseException('could not authenticate')
+
+        self.db = db
 
     def _build_dot(self, client, timeline_name, name, time):
         '''Helper function for building a dot object to be saved to the
