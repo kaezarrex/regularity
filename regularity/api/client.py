@@ -80,7 +80,9 @@ class API(object):
 
         url = self.url('/client/create')
 
-        data = request(url, 'post')
+        data = request(url, 'post', serializers=dict(
+            _id=_serializers.object_id
+        ))
 
         return data
     

@@ -185,10 +185,9 @@ def init(model, args):
     data = api.init()
 
     # write out the preliminary configuration
-    print data
     try:
         write_config(dict(
-            client=data['_id'],
+            client=str(data['_id']),
             host=args.host,
             port=args.port
         ), args.config)

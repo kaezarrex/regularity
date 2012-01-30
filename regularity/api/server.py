@@ -63,14 +63,11 @@ def encode_json(**kwargs):
 
 class ClientAPI(object):
 
-    @encode_json()
+    @encode_json(_id=serializers.object_id)
     def POST(self, data):
         client = model.client()
-        data['_id'] = str(data['_id'])
 
-        return dict(
-            client=_id
-        )
+        return client
 
 class DotAPI(object):
 
