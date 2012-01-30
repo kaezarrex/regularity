@@ -2,6 +2,11 @@
 
 if '__main__' == __name__:
 
+    import logging
+    import sys
+
+    logging.info(sys.path)
+
     import web
 
     from regularity.api import server
