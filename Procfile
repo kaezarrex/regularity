@@ -1,1 +1,1 @@
-web: python bin/regularity-api
+web: python -v bin/regularity-api
