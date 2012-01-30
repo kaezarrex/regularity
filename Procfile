@@ -1,1 +1,1 @@
-web: python bin/regularity-api 53034
+web: python bin/regularity-api $PORT
