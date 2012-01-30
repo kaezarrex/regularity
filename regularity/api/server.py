@@ -5,9 +5,6 @@ import web
 
 import serializers
 
-# this will be populated by the main executable
-model = None
-
 def serialize_dict(data, **kwargs):
     '''(De)Serialize the values in the dictionary, using the serializers passed
        in as keyword arguments.
