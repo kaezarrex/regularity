@@ -1,5 +1,0 @@
-
-
-Communication between the client and host
-  POST'ing
-  the client side expects all dictionary values sent to be returned - it makes serialization/deserialization simpler on the client side
