@@ -39,7 +39,12 @@ class RegularityDaemon(object):
     def path_to_application(self, path):
         '''Resolve an application dbus object path to a name.'''
 
-        return self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
+        application = self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
+
+        if application:
+            application = application.lower()
+
+        return application
 
     def on_active_application_changed(self, from_path, to_path):
         '''The signal handler for active application changes.
