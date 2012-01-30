@@ -1,11 +1,35 @@
 import json
+import os
 import urlparse
 
 import web
 
 import serializers
+from regularity.model import Model
 
-model = None
+config_path = os.environ.get('REGULARITY_API_CONFIG')
+if config_path is None:
+    logging.critical('no config specified!')
+    sys.exit(1)
+
+with open(config_path, 'r') as config_file:
+    try:
+        config = json.load(config_file)
+
+        db = config['db']
+
+    except (Exception, BaseException) as e:
+        logging.critical(str(e))
+        raise e
+
+    model = Model(
+        host=db['host'],
+        port=db['port'],
+        user=db['user'],
+        password=db['password'],
+        database=db['database'],
+    )
+    model = model
 
 def serialize_dict(data, **kwargs):
     '''(De)Serialize the values in the dictionary, using the serializers passed

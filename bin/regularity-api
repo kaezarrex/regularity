@@ -3,55 +3,20 @@
 if '__main__' == __name__:
 
     import argparse
-    import json
-    import logging
-    import os
-    import sys
     import web
 
     from regularity.api import server
-    from regularity.model import Model
 
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('-c', '--config')
-
     args = parser.parse_args()
 
-    config_path = args.config
-    if config_path is None:
-        config_path = os.environ.get('REGULARITY_API_CONFIG')
+    urls = (
+        r'/client/create', server.ClientAPI,
+        r'/client/([a-f0-9]{24})/dot', server.DotAPI,
+        r'/client/([a-f0-9]{24})/dash', server.DashAPI,
+        r'/client/([a-f0-9]{24})/pending', server.PendingAPI,
+    )
 
-    if config_path is None:
-        logging.critical('no config specified!')
-        sys.exit(1)
-
-    with open(config_path, 'r') as config_file:
-        try:
-            config = json.load(config_file)
-
-            db = config['db']
-
-        except (Exception, BaseException) as e:
-            logging.critical(str(e))
-            sys.exit(1)
-
-        model = Model(
-            host=db['host'],
-            port=db['port'],
-            user=db['user'],
-            password=db['password'],
-            database=db['database'],
-        )
-        server.model = model
-
-        urls = (
-            r'/client/create', server.ClientAPI,
-            r'/client/([a-f0-9]{24})/dot', server.DotAPI,
-            r'/client/([a-f0-9]{24})/dash', server.DashAPI,
-            r'/client/([a-f0-9]{24})/pending', server.PendingAPI,
-        )
-
-        app = web.application(urls, {})
-        app.run()
+    app = web.application(urls, {})
+    app.run()
 
