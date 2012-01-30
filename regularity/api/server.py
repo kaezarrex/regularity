@@ -5,6 +5,8 @@ import web
 
 import serializers
 
+model = None
+
 def serialize_dict(data, **kwargs):
     '''(De)Serialize the values in the dictionary, using the serializers passed
        in as keyword arguments.
