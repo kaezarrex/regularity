@@ -171,12 +171,10 @@ def print_table(data, *args):
 
     print '\n'.join(table.iformatted_rows(column_joiner='   '))
 
-def init(model, args):
+def init(args):
     '''Initialize the configuration. Store the client information and the
        server information for all subsequent uses.
 
-       @param model : reularity.model.Model
-           the connection to mongoDB
        @param args : argparse.Namespace
            the parsed command line options'''
 
@@ -210,11 +208,9 @@ def get_config(config_path):
 
     return config
 
-def dot(model, args):
+def dot(args):
     '''Log an activity that has no duration.
 
-       @param model : reularity.model.Model
-           the connection to mongoDB
        @param args : argparse.Namespace
            the parsed command line options'''
 
@@ -242,11 +238,9 @@ def dot(model, args):
             print 'there are no dots yet'
 
 
-def dash(model, args):
+def dash(args):
     '''Log an activity that has a duration.
       
-       @param model : reularity.model.Model
-           the connection to mongoDB
        @param args : argparse.Namespace
            the parsed command line options'''
 
@@ -292,12 +286,10 @@ def dash(model, args):
         else:
             print 'there are no dashes yet'
 
-def pending(model, args):
+def pending( args):
     '''Log the start time of an ongoing activity, to be terminated at another
        time.
 
-       @param model : reularity.model.Model
-           the connection to mongoDB
        @param args : argparse.Namespace
            the parsed command line options'''
 
@@ -329,58 +321,56 @@ def pending(model, args):
             print 'there are no pendings'
 
 
-def stats(model, args):
-    '''Print out statistics for the query defined by the command line
-       parameters.
-
-       @param model : reularity.model.Model
-           the connection to mongoDB
-       @param args : argparse.Namespace
-           the parsed command line options'''
-
-    events = model.events(
-        name=args.activity,
-        timeline=args.timelines
-    )
-
-    if args.max_duration:
-        duration_td = datetime.timedelta(seconds=args.max_duration)
-        events = list(e for e in events if e['end'] - e['start'] <= duration_td)
-
-    if not events:
-        print 'no events found'
-        return
-
-    s = EventStats(*events)
-    duration_bins = min(args.duration_bins, len(events))
-    bin_counts_duration = s.bin_counts_duration(duration_bins)
-    bin_counts_time_of_day = s.bin_counts_time_of_day(args.tod_bins)
-
-    def print_histogram(data, range_format):
-        sparkline = Sparkline(*imap(itemgetter(1), data))
-        icolumns = sparkline.icolumns(20, min_=0)
-
-        output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(data, icolumns))
-
-        table = Table(*output)
-        table.set_column_format(0, range_format)
-        table.set_column_format(1, '{:d}')
-        table.set_column_pad_left(1, True)
-
-        row_joiner = '\n                            '
-        print row_joiner.join(table.iformatted_rows(column_joiner='  ', pad_character=' '))
-        
-
-    print '%d events total' % len(events)
-    print 'min duration (seconds):     %0.2f' % s.min_duration()
-    print 'max duration (seconds):     %0.2f' % s.max_duration()
-    print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
-    print 'duration breakdown:        ', 
-    print_histogram(bin_counts_duration, '{:0.2f}-{:0.2f}')
-    print '\ntime of day breakdown:     ', 
-    print_histogram(bin_counts_time_of_day, '{:s}-{:s}')
-
-    print
+#def stats(args):
+#    '''Print out statistics for the query defined by the command line
+#       parameters.
+#
+#       @param args : argparse.Namespace
+#           the parsed command line options'''
+#
+#    events = model.events(
+#        name=args.activity,
+#        timeline=args.timelines
+#    )
+#
+#    if args.max_duration:
+#        duration_td = datetime.timedelta(seconds=args.max_duration)
+#        events = list(e for e in events if e['end'] - e['start'] <= duration_td)
+#
+#    if not events:
+#        print 'no events found'
+#        return
+#
+#    s = EventStats(*events)
+#    duration_bins = min(args.duration_bins, len(events))
+#    bin_counts_duration = s.bin_counts_duration(duration_bins)
+#    bin_counts_time_of_day = s.bin_counts_time_of_day(args.tod_bins)
+#
+#    def print_histogram(data, range_format):
+#        sparkline = Sparkline(*imap(itemgetter(1), data))
+#        icolumns = sparkline.icolumns(20, min_=0)
+#
+#        output = ((bin_range, bin_count, column) for (bin_range, bin_count), column in izip(data, icolumns))
+#
+#        table = Table(*output)
+#        table.set_column_format(0, range_format)
+#        table.set_column_format(1, '{:d}')
+#        table.set_column_pad_left(1, True)
+#
+#        row_joiner = '\n                            '
+#        print row_joiner.join(table.iformatted_rows(column_joiner='  ', pad_character=' '))
+#        
+#
+#    print '%d events total' % len(events)
+#    print 'min duration (seconds):     %0.2f' % s.min_duration()
+#    print 'max duration (seconds):     %0.2f' % s.max_duration()
+#    print 'average duration (seconds): %0.2f +/- %0.2f' % (s.mean_duration(), s.std_duration())
+#    print 'duration breakdown:        ', 
+#    print_histogram(bin_counts_duration, '{:0.2f}-{:0.2f}')
+#    print '\ntime of day breakdown:     ', 
+#    print_histogram(bin_counts_time_of_day, '{:s}-{:s}')
+#
+#    print
     
 
 if __name__ == "__main__":
@@ -421,17 +411,17 @@ if __name__ == "__main__":
     dash_parser.add_argument('time', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=pending)
 
-    stats_parser = subparsers.add_parser('stats')
-    stats_parser.add_argument('activity', nargs='?')
-    stats_parser.add_argument('--duration-bins', type=int, default=5)
-    stats_parser.add_argument('--max-duration', type=int, default=None)
-    stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
-    stats_parser.add_argument('--tod-bins', type=int, default=5)
-    stats_parser.set_defaults(func=stats)
+#    stats_parser = subparsers.add_parser('stats')
+#    stats_parser.add_argument('activity', nargs='?')
+#    stats_parser.add_argument('--duration-bins', type=int, default=5)
+#    stats_parser.add_argument('--max-duration', type=int, default=None)
+#    stats_parser.add_argument('-t', '--timeline', action='append', dest='timelines', default=None, metavar='timeline')
+#    stats_parser.add_argument('--tod-bins', type=int, default=5)
+#    stats_parser.set_defaults(func=stats)
 
     args = parser.parse_args()
 
-    model = Model()
-    args.func(model, args)
+#    model = Model()
+    args.func(args)
 
 
