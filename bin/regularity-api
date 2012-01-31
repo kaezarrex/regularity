@@ -2,13 +2,9 @@
 
 if '__main__' == __name__:
 
-    import argparse
     import web
 
     from regularity.api import server
-
-    parser = argparse.ArgumentParser()
-    args = parser.parse_args()
 
     urls = (
         r'/client/create', server.ClientAPI,
