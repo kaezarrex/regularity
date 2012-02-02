@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import urlparse
 
@@ -31,23 +32,6 @@ with open(config_path, 'r') as config_file:
     )
     model = model
 
-def serialize_dict(data, **kwargs):
-    '''(De)Serialize the values in the dictionary, using the serializers passed
-       in as keyword arguments.
-
-       @param d : dict
-           the dictionary whose values are to be transformed
-       @param kwargs : keyword arguments
-           serializers to use'''
-
-    new_data = dict()
-    for key, value in data.iteritems():
-        if key in kwargs:
-            new_data[key] = kwargs[key](value)
-        else:
-            new_data[key] = value
-
-    return new_data
 
 def encode_json(**kwargs):
     '''Create a decorator for a function that encodes its return value as JSON.
@@ -60,24 +44,13 @@ def encode_json(**kwargs):
 
     def decorator(func):
         def wrapper(*args, **kwargs):
-            data = web.data()
-            data = urlparse.parse_qs(data)
+            data = web.input()
 
-            for key, value in data.iteritems():
-                if not value:
-                    continue
+            data = serializers.serialize(data, **_serializers)
 
-                value = value[0]
-                if key in _serializers:
-                    data[key] = _serializers[key](value)
-                else:
-                    data[key] = value
-
-            args = args + (data,)
+            kwargs.update(data)
             data = func(*args, **kwargs)
 
-            # assume that the function returns a dict or iterable - if it is an
-            # iterable, assume each object in it is a dict
             data = serializers.serialize(data, **_serializers)
 
             web.header('Content-Type', 'application/json')
@@ -95,17 +68,17 @@ class ClientAPI(object):
 
 class DotAPI(object):
 
-    @encode_json(_id=serializers.object_id, time=serializers.datetime)
-    def GET(self, client, data):
-        dots = model.dots(client)
+    @encode_json(limit=serializers.int, _id=serializers.object_id, time=serializers.datetime)
+    def GET(self, client, limit=10):
+        dots = model.dots(client, limit=limit)
 
         return dots
 
     @encode_json(_id=serializers.object_id, time=serializers.datetime)
-    def POST(self, client, data):
-        timeline = data['timeline']
-        activity = data['activity']
-        time = data['time']
+    def POST(self, client, **kwargs):
+        timeline = kwargs['timeline']
+        activity = kwargs['activity']
+        time = kwargs['time']
 
         dot = model.dot(client, timeline, activity, time)
 
@@ -113,19 +86,19 @@ class DotAPI(object):
 
 class DashAPI(object):
 
-    @encode_json(_id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
-    def GET(self, client, data):
-        dashes = model.dashes(client)
+    @encode_json(limit=serializers.int, _id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
+    def GET(self, client, limit=10):
+        dashes = model.dashes(client, limit=limit)
 
         return dashes
 
 
     @encode_json(_id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
-    def POST(self, client, data):
-        timeline = data['timeline']
-        activity = data['activity']
-        start = data['start']
-        end = data['end']
+    def POST(self, client, **kwargs):
+        timeline = kwargs['timeline']
+        activity = kwargs['activity']
+        start = kwargs['start']
+        end = kwargs['end']
 
         dash = model.dash(client, timeline, activity, start, end)
 
@@ -133,17 +106,17 @@ class DashAPI(object):
 
 class PendingAPI(object):
 
-    @encode_json(_id=serializers.object_id, start=serializers.datetime)
-    def GET(self, client, data):
-        pendings = model.pendings(client)
+    @encode_json(limit=serializers.int, _id=serializers.object_id, start=serializers.datetime)
+    def GET(self, client, limit=10):
+        pendings = model.pendings(client, limit=limit)
 
         return pendings
 
     @encode_json(_id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
-    def POST(self, client, data):
-        timeline = data['timeline']
-        activity = data['activity']
-        start = data['start']
+    def POST(self, client, **kwargs):
+        timeline = kwargs['timeline']
+        activity = kwargs['activity']
+        start = kwargs['start']
         
         pending = model.pending(client, timeline, activity, start)
 

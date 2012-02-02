@@ -41,6 +41,18 @@ def serialize(o, **kwargs):
 
     raise BaseException('object is not list or iterable')
 
+_int = int
+def int(o):
+    '''(De)serialize the object to/from int/str.
+
+       @param o : int | str
+           the object to (de)serialize'''
+
+    if isinstance(o, basestring):
+        return _int(o)
+    elif isinstance(o, _int):
+        str(o)
+
 def object_id(o):
     '''(De)serialize the object to/from ObjectID/str.
 

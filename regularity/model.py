@@ -117,12 +117,14 @@ class Model(object):
         
         return dot
 
-    def dots(self, client, **kwargs):
+    def dots(self, client, limit=10, **kwargs):
         '''Perform a general query for dots. By default, will return all events 
            unless filtering criteria are specified in kwargs.
            
            @param client : str
                the id of the client to which the event belongs
+           @param limit : optional, int
+                retrieve this many most-recent documents, defaults to 10
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
@@ -141,8 +143,11 @@ class Model(object):
         if timeline:
             criteria['timeline'] = timeline
 
-        data = self.db.dots.find(criteria)
-        return tuple(data)
+        query = self.db.dots.find(criteria)
+        query = query.sort('time', -1)
+        query = query.limit(limit)
+
+        return tuple(query)[::-1]
 
     def overlapping_dots(self, client, start, end, buffer_=None, **kwargs):
         '''Return timeline dots that overlap with the time denoted by start
@@ -225,12 +230,14 @@ class Model(object):
         self.db.dashes.save(dash)
         return dash
 
-    def dashes(self, client, **kwargs):
+    def dashes(self, client, limit=10, **kwargs):
         '''Perform a general query for dashes. By default, will return all
            events unless filtering criteria are specified in kwargs.
            
            @param client : str
                the name of the client to which the event belongs
+           @param limit : optional, int
+                retrieve this many most-recent documents, defaults to 10
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
@@ -249,8 +256,11 @@ class Model(object):
         if timeline:
             criteria['timeline'] = timeline
 
-        data = self.db.dashes.find(criteria)
-        return tuple(data)
+        query = self.db.dashes.find(criteria)
+        query = query.sort('end', -1)
+        query = query.limit(limit)
+
+        return tuple(query)[::-1]
 
     def overlapping_dashes(self, client, start, end, buffer_=None, **kwargs):
         '''Return timeline dashes that overlap with the time denoted by start
@@ -283,6 +293,7 @@ class Model(object):
                 { 'end' : { '$lt' : start } },
             ]
         })
+
         query = self.db.dashes.find(criteria)
         query = query.sort('end', 1)
         overlapping = tuple(query)
@@ -325,12 +336,14 @@ class Model(object):
 
             return pending
 
-    def pendings(self, client, **kwargs):
+    def pendings(self, client, limit=10, **kwargs):
         '''Perform a general query for pendings. By default, will return all
            events unless filtering criteria are specified in kwargs.
            
            @param client : str
                the name of the client to which the event belongs
+           @param limit : optional, int
+                retrieve this many most-recent documents, defaults to 10
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
@@ -349,6 +362,9 @@ class Model(object):
         if timeline:
             criteria['timeline'] = timeline
 
-        data = self.db.pendings.find(criteria)
-        return tuple(data)
+        query = self.db.pendings.find(criteria)
+        query = query.sort('start', -1)
+        query = query.limit(limit)
+
+        return tuple(query)[::-1]
 
