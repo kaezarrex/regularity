@@ -88,7 +88,6 @@ class DashAPI(object):
 
     @encode_json(limit=serializers.int, _id=serializers.object_id, start=serializers.datetime, end=serializers.datetime)
     def GET(self, client, name=None, limit=10):
-        print name
         dashes = model.dashes(client, name=name, limit=limit)
 
         return dashes

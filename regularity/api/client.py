@@ -78,7 +78,7 @@ class API(object):
             query = dict((k,v) for k, v in kwargs.iteritems() if v)
 
             if query:
-                query_string = urllib.urlencode(kwargs)
+                query_string = urllib.urlencode(query)
                 url = '%s?%s' % (url, query_string)
 
         return url
