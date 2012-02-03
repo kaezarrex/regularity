@@ -167,7 +167,10 @@ def localize_data(data, timezone, *args):
 
     for d in _data:
         for arg in args:
-            d[arg] = localize_datetime(d[arg], timezone)
+            t = d.get(arg)
+            if t is None:
+                continue
+            d[arg] = localize_datetime(t, timezone)
 
     return _data
 
@@ -353,7 +356,8 @@ def list_(args):
 
     data.sort(key=sort_key)
 
-    print_table(data, 'name', 'type', 't1', 't2', 'duration')
+    local_data = localize_data(data, config['timezone'], 't1', 't2')
+    print_table(local_data, 'name', 'type', 't1', 't2', 'duration')
     
 
 #def stats(args):
