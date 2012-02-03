@@ -66,13 +66,19 @@ class API(object):
         self.base_url = 'http://%s:%d' % (host, port)
         self.client = client
 
-    def url(self, path):
+    def url(self, path, **kwargs):
         '''Form the url to hit for the API path.
 
            @param path : str
                the API path to hit'''
 
-        return '%s%s' % (self.base_url, path)
+        url = '%s%s' % (self.base_url, path)
+
+        if kwargs:
+            query_string = urllib.urlencode(kwargs)
+            url = '%s?%s' % (url, query_string)
+
+        return url
 
     def init(self):
         '''Register a new client on the server, and return the configuration
@@ -87,13 +93,13 @@ class API(object):
         return data
     
     @require_client
-    def dots(self, timeline):
+    def dots(self, limit=10):
         '''List the dots on the server for this client.
-           
-           @param timeline : str
-               the timeline the event belongs to'''
+        
+           @param limit : int
+               the length to limit the results to'''
 
-        url = self.url('/client/%s/dot' % self.client)
+        url = self.url('/client/%s/dot' % self.client, limit=limit)
 
         data = request(url, 'get', serializers=dict(
             time=_serializers.datetime
@@ -127,13 +133,13 @@ class API(object):
         return data
     
     @require_client
-    def dashes(self, timeline):
+    def dashes(self, limit=10):
         '''Get the dashes for this client.
+        
+           @param limit : int
+               the length to limit the results to'''
 
-           @param timeline : str
-               the timeline the event belongs to'''
-
-        url = self.url('/client/%s/dash' % self.client)
+        url = self.url('/client/%s/dash' % self.client, limit=limit)
 
         data = request(url, 'get', serializers=dict(
             start=_serializers.datetime,
@@ -172,13 +178,13 @@ class API(object):
         return data
 
     @require_client
-    def pendings(self, timeline):
+    def pendings(self, limit=10):
         '''List the pendings for this client.
+        
+           @param limit : int
+               the length to limit the results to'''
 
-           @param timeline : str
-               the timeline the events belong to'''
-
-        url = self.url('/client/%s/pending' % self.client)
+        url = self.url('/client/%s/pending' % self.client, limit=limit)
 
         data = request(url, 'get', serializers=dict(
             start=_serializers.datetime

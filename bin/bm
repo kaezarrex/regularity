@@ -144,7 +144,7 @@ def print_table(data, *args):
     rows = list()
     rows.append(args)
     for d in data:
-        row = tuple(d[arg] for arg in args)
+        row = tuple(d.get(arg, '') for arg in args)
         rows.append(row)
 
     table = Table(*rows)
@@ -198,25 +198,15 @@ def dot(args):
     api = API(config['host'], config['port'], client=config['client'])
 
     timeline = 'bm'
+    time = args.time
 
-    if args.activity:
-        time = args.time
+    if not time:
+        time = datetime.datetime.utcnow()
 
-        if not time:
-            time = datetime.datetime.utcnow()
+    data = api.dot(timeline, args.activity, time)
 
-        data = api.dot(timeline, args.activity, time)
-
-        print data['_id']
-        print data['time']
-    else:
-        data = api.dots(timeline)
-
-        if data:
-            print_table(data, 'name', 'time')
-        else:
-            print 'there are no dots yet'
-
+    print data['_id']
+    print data['time']
 
 def dash(args):
     '''Log an activity that has a duration.
@@ -227,44 +217,35 @@ def dash(args):
     config = get_config(args.config)
     api = API(config['host'], config['port'], client=config['client'])
 
+
     timeline = 'bm'
+    now = datetime.datetime.utcnow()
 
-    if args.activity:
-        now = datetime.datetime.utcnow()
-
-        if args.time1:
-            if args.time2:
-                start = min(args.time1, args.time2)
-                end = max(args.time1, args.time2)
-            else:
-                start = min(now, args.time1)
-                end = max(now, args.time1)
-
+    if args.time1:
+        if args.time2:
+            start = min(args.time1, args.time2)
+            end = max(args.time1, args.time2)
         else:
-            start = now
-            running = True
-            while running:
-                try:
-                    time.sleep(1.0)
-                except KeyboardInterrupt:
-                    running = False
+            start = min(now, args.time1)
+            end = max(now, args.time1)
 
-            end = datetime.datetime.utcnow()
-
-        data = api.dash(timeline, args.activity, start, end)
-
-        print
-        print data['_id']
-        print data['start']
-        print data['end']
-    
     else:
-        data = api.dashes(timeline)
+        start = now
+        running = True
+        while running:
+            try:
+                time.sleep(1.0)
+            except KeyboardInterrupt:
+                running = False
 
-        if data:
-            print_table(data, 'name', 'start', 'end')
-        else:
-            print 'there are no dashes yet'
+        end = datetime.datetime.utcnow()
+
+    data = api.dash(timeline, args.activity, start, end)
+
+    print
+    print data['_id']
+    print data['start']
+    print data['end']
 
 def pending( args):
     '''Log the start time of an ongoing activity, to be terminated at another
@@ -277,29 +258,68 @@ def pending( args):
     api = API(config['host'], config['port'], client=config['client'])
 
     timeline = 'bm'
+    start = args.time
 
-    if args.activity:
-        start = args.time
+    if not start:
+        start = datetime.datetime.utcnow()
 
-        if not start:
-            start = datetime.datetime.utcnow()
+    data = api.pending(timeline, args.activity, start)
 
-        data = api.pending(timeline, args.activity, start)
+    print data['_id']
+    print data['start']
+    if 'end' in data:
+        print data['end']
 
-        print data['_id']
-        print data['start']
-        if 'end' in data:
-            print data['end']
+def list_(args):
+    '''List the events requested in args.
 
+       @param args : argparse.Namespace
+           the parsed command line options'''
 
-    else:
-        data = api.pendings(timeline)
+    config = get_config(args.config)
+    api = API(config['host'], config['port'], client=config['client'])
 
-        if data:
-            print_table(data, 'name', 'start')
-        else:
-            print 'there are no pendings'
+    types = set(args.types)
 
+    data = list()
+
+    if '.' in types:
+        dots = api.dots(limit=args.limit)
+        for dot in dots:
+            data.append(dict(
+                name=dot['name'],
+                type='dot',
+                t1=dot['time']
+            ))
+
+    if '-' in types:
+        dashes = api.dashes(limit=args.limit)
+        for dash in dashes:
+            data.append(dict(
+                name=dash['name'],
+                type='dash',
+                t1=dash['start'],
+                t2=dash['end']
+            ))
+
+    if '?' in types:
+        pendings = api.pendings(limit=args.limit)
+        for pending in pendings:
+            data.append(dict(
+                name=pending['name'],
+                type='pending',
+                t1=pending['start']
+            ))
+
+    def sort_key(d):
+        if 't2' in d:
+            return d['t2']
+        return d['t1']
+
+    data.sort(key=sort_key)
+
+    print_table(data, 'name', 'type', 't1', 't2')
+    
 
 #def stats(args):
 #    '''Print out statistics for the query defined by the command line
@@ -376,20 +396,25 @@ if __name__ == "__main__":
     init_parser.set_defaults(func=init)
 
     dot_parser = subparsers.add_parser('.')
-    dot_parser.add_argument('activity', nargs='?')
+    dot_parser.add_argument('activity')
     dot_parser.add_argument('time', type=parse_time, nargs='?')
     dot_parser.set_defaults(func=dot)
 
     dash_parser = subparsers.add_parser('-')
-    dash_parser.add_argument('activity', nargs='?')
+    dash_parser.add_argument('activity')
     dash_parser.add_argument('time1', type=parse_time, nargs='?', metavar='time')
     dash_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=dash)
 
     dash_parser = subparsers.add_parser('?')
-    dash_parser.add_argument('activity', nargs='?')
+    dash_parser.add_argument('activity')
     dash_parser.add_argument('time', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=pending)
+
+    list_parser = subparsers.add_parser('list')
+    list_parser.add_argument('types', nargs='?', default='.-?')
+    list_parser.add_argument('--limit', type=int, default=10)
+    list_parser.set_defaults(func=list_)
 
 #    stats_parser = subparsers.add_parser('stats')
 #    stats_parser.add_argument('activity', nargs='?')
