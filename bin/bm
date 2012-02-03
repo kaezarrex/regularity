@@ -299,7 +299,8 @@ def list_(args):
                 name=dash['name'],
                 type='dash',
                 t1=dash['start'],
-                t2=dash['end']
+                t2=dash['end'],
+                duration=dash['end'] - dash['start']
             ))
 
     if '?' in types:
@@ -318,7 +319,7 @@ def list_(args):
 
     data.sort(key=sort_key)
 
-    print_table(data, 'name', 'type', 't1', 't2')
+    print_table(data, 'name', 'type', 't1', 't2', 'duration')
     
 
 #def stats(args):
