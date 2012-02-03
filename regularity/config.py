@@ -1,6 +1,6 @@
 import json
 
-CONFIG_KEYS = ('client', 'host', 'port')
+CONFIG_KEYS = ('client', 'host', 'port', 'timezone')
 
 def load_config(path):
     '''Load the configuration file and return the settings.

@@ -1,10 +1,12 @@
 #! /usr/bin/env python
 
+from copy import deepcopy
 import datetime
 from itertools import imap, izip
 import logging
 import math
 from operator import itemgetter
+import pytz
 import re
 
 from regularity.api.client import API
@@ -151,6 +153,40 @@ def print_table(data, *args):
 
     print '\n'.join(table.iformatted_rows(column_joiner='   '))
 
+def localize_data(data, timezone, *args):
+    '''Convert datetimes in data from UTC to another timezone
+
+        @param data : iterable(dict)
+            an iterable of dicts
+        @param timezone : string
+            the timezone to convert to
+        @param args : positional paramaters
+            the keys to convert from UTC to another timezone'''
+
+    _data = deepcopy(data)
+
+    for d in _data:
+        for arg in args:
+            t = d.get(arg)
+            if t is None:
+                continue
+            d[arg] = localize_datetime(t, timezone)
+
+    return _data
+
+def localize_datetime(time, timezone):
+    '''Convert a datetime from UTC to another timezone
+
+        @param time : datetime
+            the datetimetime to convert
+        @param timezone : string
+            the timezone to convert to'''
+
+    tz =  pytz.timezone(timezone)
+    utc_time = time.replace(tzinfo=pytz.utc)
+
+    return utc_time.astimezone(tz)
+
 def init(args):
     '''Initialize the configuration. Store the client information and the
        server information for all subsequent uses.
@@ -167,7 +203,8 @@ def init(args):
         write_config(dict(
             client=str(data['_id']),
             host=args.host,
-            port=args.port
+            port=args.port,
+            timezone=args.timezone
         ), args.config)
     except BaseException as e:
         raise
@@ -206,7 +243,7 @@ def dot(args):
     data = api.dot(timeline, args.activity, time)
 
     print data['_id']
-    print data['time']
+    print localize_datetime(data['time'], config['timezone'])
 
 def dash(args):
     '''Log an activity that has a duration.
@@ -244,8 +281,8 @@ def dash(args):
 
     print
     print data['_id']
-    print data['start']
-    print data['end']
+    print localize_datetime(data['start'], config['timezone'])
+    print localize_datetime(data['end'], config['timezone'])
 
 def pending( args):
     '''Log the start time of an ongoing activity, to be terminated at another
@@ -266,9 +303,9 @@ def pending( args):
     data = api.pending(timeline, args.activity, start)
 
     print data['_id']
-    print data['start']
+    print localize_datetime(data['start'], config['timezone'])
     if 'end' in data:
-        print data['end']
+        print localize_datetime(data['end'], config['timezone'])
 
 def list_(args):
     '''List the events requested in args.
@@ -319,7 +356,8 @@ def list_(args):
 
     data.sort(key=sort_key)
 
-    print_table(data, 'name', 'type', 't1', 't2', 'duration')
+    local_data = localize_data(data, config['timezone'], 't1', 't2')
+    print_table(local_data, 'name', 'type', 't1', 't2', 'duration')
     
 
 #def stats(args):
@@ -394,6 +432,7 @@ if __name__ == "__main__":
     init_parser = subparsers.add_parser('init')
     init_parser.add_argument('--host', default='localhost')
     init_parser.add_argument('--port', type=int, default=80)
+    init_parser.add_argument('--timezone', default='UTC')
     init_parser.set_defaults(func=init)
 
     dot_parser = subparsers.add_parser('.')
