@@ -284,7 +284,7 @@ def list_(args):
     data = list()
 
     if '.' in types:
-        dots = api.dots(limit=args.limit)
+        dots = api.dots(name=args.name, limit=args.limit)
         for dot in dots:
             data.append(dict(
                 name=dot['name'],
@@ -293,7 +293,7 @@ def list_(args):
             ))
 
     if '-' in types:
-        dashes = api.dashes(limit=args.limit)
+        dashes = api.dashes(name=args.name, limit=args.limit)
         for dash in dashes:
             data.append(dict(
                 name=dash['name'],
@@ -303,7 +303,7 @@ def list_(args):
             ))
 
     if '?' in types:
-        pendings = api.pendings(limit=args.limit)
+        pendings = api.pendings(name=args.name, limit=args.limit)
         for pending in pendings:
             data.append(dict(
                 name=pending['name'],
@@ -414,6 +414,7 @@ if __name__ == "__main__":
     list_parser = subparsers.add_parser('list')
     list_parser.add_argument('types', nargs='?', default='.-?')
     list_parser.add_argument('--limit', type=int, default=10)
+    list_parser.add_argument('--name')
     list_parser.set_defaults(func=list_)
 
 #    stats_parser = subparsers.add_parser('stats')

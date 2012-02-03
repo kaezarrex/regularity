@@ -75,8 +75,11 @@ class API(object):
         url = '%s%s' % (self.base_url, path)
 
         if kwargs:
-            query_string = urllib.urlencode(kwargs)
-            url = '%s?%s' % (url, query_string)
+            query = dict((k,v) for k, v in kwargs.iteritems() if v)
+
+            if query:
+                query_string = urllib.urlencode(kwargs)
+                url = '%s?%s' % (url, query_string)
 
         return url
 
@@ -93,13 +96,15 @@ class API(object):
         return data
     
     @require_client
-    def dots(self, limit=10):
+    def dots(self, name=None, limit=10):
         '''List the dots on the server for this client.
         
+           @param name : optional, str
+               the name of the activity to retrieve 
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/client/%s/dot' % self.client, limit=limit)
+        url = self.url('/client/%s/dot' % self.client, name=name, limit=limit)
 
         data = request(url, 'get', serializers=dict(
             time=_serializers.datetime
@@ -133,13 +138,15 @@ class API(object):
         return data
     
     @require_client
-    def dashes(self, limit=10):
+    def dashes(self, name=None, limit=10):
         '''Get the dashes for this client.
         
+           @param name : optional, str
+               the name of the activity to retrieve 
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/client/%s/dash' % self.client, limit=limit)
+        url = self.url('/client/%s/dash' % self.client, name=name, limit=limit)
 
         data = request(url, 'get', serializers=dict(
             start=_serializers.datetime,
@@ -178,13 +185,15 @@ class API(object):
         return data
 
     @require_client
-    def pendings(self, limit=10):
+    def pendings(self, name=None, limit=10):
         '''List the pendings for this client.
         
+           @param name : optional, str
+               the name of the activity to retrieve 
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/client/%s/pending' % self.client, limit=limit)
+        url = self.url('/client/%s/pending' % self.client, name=name, limit=limit)
 
         data = request(url, 'get', serializers=dict(
             start=_serializers.datetime
