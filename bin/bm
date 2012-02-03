@@ -167,7 +167,8 @@ def init(args):
         write_config(dict(
             client=str(data['_id']),
             host=args.host,
-            port=args.port
+            port=args.port,
+            timezone=args.timezone
         ), args.config)
     except BaseException as e:
         raise
@@ -393,6 +394,7 @@ if __name__ == "__main__":
     init_parser = subparsers.add_parser('init')
     init_parser.add_argument('--host', default='localhost')
     init_parser.add_argument('--port', type=int, default=80)
+    init_parser.add_argument('--timezone', default='UTC')
     init_parser.set_defaults(func=init)
 
     dot_parser = subparsers.add_parser('.')
