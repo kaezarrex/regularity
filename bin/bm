@@ -12,51 +12,17 @@ from regularity.config import load_config, write_config
 from regularity.sparkline import Sparkline
 from regularity.stats import EventStats
 from regularity.table import Table
+ 
+def int_or_zero(o):
+    '''Return the int representation of the object or 0.
 
-def offset_minute(offset):
-    '''Parse an offset string to see if it describes a minute offset.
+       @param o : object
+           the object to convert into an int'''
 
-       @param offset : str
-           the offset string'''
-
-    match = re.match(r'^([-+])([0-5]?[0-9])$', offset)
-
-    if match:
-        sign = match.group(1)
-        minutes = int(match.group(2))
-
-        seconds = 60 * minutes
-
-        if '+' == sign:
-            return seconds
-        return -seconds
-
-    return None
-
-def offset_hour_minute(offset):
-    '''Parse an offset string to see if it describes a hour:minute offset.
-
-       @param offset : str
-           the offset string'''
-
-    match = re.match(r'^([-+])([0-9]+):([0-5][0-9])$', offset)
-
-    if match:
-        sign = match.group(1)
-        hours = int(match.group(2))
-        minutes = int(match.group(3))
-
-        seconds = 60 * minutes
-
-        if hours:
-            hours = int(hours)
-            seconds += 3600 * hours
-
-        if '+' == sign:
-            return seconds
-        return -seconds
-
-    return None
+    try:
+        return int(o)
+    except:
+        return 0
 
 def parse_offset(offset):
     '''Parse a string intended to define an offset from now.
@@ -64,15 +30,29 @@ def parse_offset(offset):
        @param offset : str
            the offset from now'''
 
-    seconds = offset_minute(offset)
-    if not seconds:
-        seconds = offset_hour_minute(offset)
+    match = re.match(r'([-+])?(([0-9]+)h)?(([0-9]+)m)?(([0-9]+)s)?$', offset)
 
-    if seconds:
-        delta_time = datetime.timedelta(seconds=seconds)
-        return datetime.datetime.utcnow() + delta_time
+    if match is None:
+        return None
 
-    return None
+    groups = match.groups()
+    if not any(groups[1:]):
+        # only the sign was specified
+        return None
+    
+    sign = groups[0]
+
+    hours = int_or_zero(groups[2])
+    minutes = int_or_zero(groups[4])
+    seconds = int_or_zero(groups[6])
+
+    seconds = hours * 3600 + minutes * 60 + seconds
+
+    if '-' == sign:
+        seconds = -seconds
+
+    delta_time = datetime.timedelta(seconds=seconds)
+    return datetime.datetime.utcnow() + delta_time
 
 def parse_time_of_day(time):
     '''Parse a string intended to define a time of day, in 24 hour format
