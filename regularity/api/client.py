@@ -46,7 +46,7 @@ def request(url, method, data=None, serializers=None):
         data = json.loads(data)
 
         if data:
-            data = _serializers.serialize(data, **serializers)
+            _serializers.serialize(data, **serializers)
 
         return data
     else:

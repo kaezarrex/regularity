@@ -3,44 +3,28 @@ import datetime as _datetime
 
 from pymongo.objectid import ObjectId
 
+from regularity.utils import recurse
+
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
-
-def serialize_dict(data, **kwargs):
-    '''(De)Serialize the values in the dictionary, using the serializers passed
-       in as keyword arguments.
-
-       @param d : dict
-           the dictionary whose values are to be transformed
-       @param kwargs : keyword arguments
-           serializers to use'''
-
-    new_data = dict()
-    for key, value in data.iteritems():
-        if key in kwargs:
-            new_data[key] = kwargs[key](value)
-        else:
-            new_data[key] = value
-
-    return new_data
 
 def serialize(o, **kwargs):
     '''(De)serialize the object with the serializers passed in as keyword
-       arguments. The object may be a dict, or an iterable of dicts.
+       arguments. The object may an arbitrary nesting of dicts/lists, however
+       see regularity.utils.recurse() for the assumptions that are made about
+       the data.
 
        @param o : dict | iterable
            the object to serialize
        @param kwargs : keyword arguments
-           serializers to use'''
+           a mapping of field name -> serializer function'''
 
-    if o is None:
-        return None
-    elif isinstance(o, dict):
-        return serialize_dict(o, **kwargs)
-    elif hasattr(o, '__iter__'):
-        return tuple(serialize_dict(d, **kwargs) for d in o)
+    def callback(key, value):
+        if key in kwargs:
+            function = kwargs[key]
+            return function(value)
 
-    raise BaseException('object is not list or iterable')
-
+    recurse(o, callback)
+    
 _int = int
 def int(o):
     '''(De)serialize the object to/from int/str.
