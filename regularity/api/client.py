@@ -1,5 +1,7 @@
+from copy import deepcopy
 import httplib
 import json
+import times
 import urllib
 
 import requests
@@ -53,7 +55,7 @@ def request(url, method, data=None, serializers=None):
 
 class API(object):
 
-    def __init__(self, host, port, client=None):
+    def __init__(self, host, port, timezone, client=None):
         '''Create the client-side api.
 
            @param host : str
@@ -64,6 +66,7 @@ class API(object):
                the client id to bind the API to'''
 
         self.base_url = 'http://%s:%d' % (host, port)
+        self.timezone = timezone
         self.client = client
 
     def url(self, path, **kwargs):
@@ -110,7 +113,7 @@ class API(object):
             time=_serializers.datetime
         ))
 
-        return data
+        return self._localize_data(data, 'time')
     
     @require_client
     def dot(self, timeline, activity, time): 
@@ -135,7 +138,7 @@ class API(object):
             time=_serializers.datetime
         ))
 
-        return data
+        return self._localize_datum(data, 'time')
     
     @require_client
     def dashes(self, name=None, limit=10):
@@ -153,7 +156,7 @@ class API(object):
             end=_serializers.datetime
         ))
 
-        return data
+        return self._localize_data(data, 'start', 'end')
     
     @require_client
     def dash(self, timeline, activity, start, end): 
@@ -182,7 +185,7 @@ class API(object):
             end=_serializers.datetime
         ))
 
-        return data
+        return self._localize_datum(data, 'start', 'end')
 
     @require_client
     def pendings(self, name=None, limit=10):
@@ -199,7 +202,7 @@ class API(object):
             start=_serializers.datetime
         ))
 
-        return data
+        return self._localize_data(data, 'start', 'end')
     
     @require_client
     def pending(self, timeline, activity, start): 
@@ -226,5 +229,37 @@ class API(object):
             end=_serializers.datetime,
         ))
 
-        return data
+        return self._localize_datum(data, 'start', 'end')
 
+    def _localize_data(self, data, *args):
+        '''Convert datetimes in data from UTC to another timezone
+
+        @param data : iterable(dict)
+            an iterable of dicts
+        @param args : positional paramaters
+            the keys to convert from UTC to another timezone'''
+
+        _data = list()
+
+        for d in data:
+            _data.append(self._localize_datum(d, *args))
+
+        return tuple(_data)
+
+    def _localize_datum(self, datum, *args):
+        '''Convert datetimes in one line of data from UTC to another timezone
+
+        @param datum : dict
+            a dict
+        @param args : positional paramaters
+            the keys to convert from UTC to another timezone'''
+
+        _datum = deepcopy(datum)
+
+        for arg in args:
+            t = _datum.get(arg)
+            if t is None:
+                continue
+            _datum[arg] = times.to_local(t, self.timezone)
+
+        return _datum

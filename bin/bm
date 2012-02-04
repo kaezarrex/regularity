@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-from copy import deepcopy
 import datetime
 from itertools import imap, izip
 import logging
@@ -153,40 +152,6 @@ def print_table(data, *args):
 
     print '\n'.join(table.iformatted_rows(column_joiner='   '))
 
-def localize_data(data, timezone, *args):
-    '''Convert datetimes in data from UTC to another timezone
-
-        @param data : iterable(dict)
-            an iterable of dicts
-        @param timezone : string
-            the timezone to convert to
-        @param args : positional paramaters
-            the keys to convert from UTC to another timezone'''
-
-    _data = deepcopy(data)
-
-    for d in _data:
-        for arg in args:
-            t = d.get(arg)
-            if t is None:
-                continue
-            d[arg] = localize_datetime(t, timezone)
-
-    return _data
-
-def localize_datetime(time, timezone):
-    '''Convert a datetime from UTC to another timezone
-
-        @param time : datetime
-            the datetimetime to convert
-        @param timezone : string
-            the timezone to convert to'''
-
-    tz =  pytz.timezone(timezone)
-    utc_time = time.replace(tzinfo=pytz.utc)
-
-    return utc_time.astimezone(tz)
-
 def init(args):
     '''Initialize the configuration. Store the client information and the
        server information for all subsequent uses.
@@ -195,7 +160,7 @@ def init(args):
            the parsed command line options'''
 
     # reserve a client through the api
-    api = API(args.host, args.port)
+    api = API(args.host, args.port, args.timezone)
     data = api.init()
 
     # write out the preliminary configuration
@@ -232,7 +197,7 @@ def dot(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
 
     timeline = 'bm'
     time = args.time
@@ -243,7 +208,7 @@ def dot(args):
     data = api.dot(timeline, args.activity, time)
 
     print data['_id']
-    print localize_datetime(data['time'], config['timezone'])
+    print data['time']
 
 def dash(args):
     '''Log an activity that has a duration.
@@ -252,7 +217,7 @@ def dash(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
 
 
     timeline = 'bm'
@@ -281,8 +246,8 @@ def dash(args):
 
     print
     print data['_id']
-    print localize_datetime(data['start'], config['timezone'])
-    print localize_datetime(data['end'], config['timezone'])
+    print data['start']
+    print data['end']
 
 def pending( args):
     '''Log the start time of an ongoing activity, to be terminated at another
@@ -292,7 +257,7 @@ def pending( args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
 
     timeline = 'bm'
     start = args.time
@@ -303,9 +268,9 @@ def pending( args):
     data = api.pending(timeline, args.activity, start)
 
     print data['_id']
-    print localize_datetime(data['start'], config['timezone'])
+    print data['start']
     if 'end' in data:
-        print localize_datetime(data['end'], config['timezone'])
+        print data['end']
 
 def list_(args):
     '''List the events requested in args.
@@ -314,7 +279,7 @@ def list_(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
 
     types = set(args.types)
 
@@ -356,8 +321,7 @@ def list_(args):
 
     data.sort(key=sort_key)
 
-    local_data = localize_data(data, config['timezone'], 't1', 't2')
-    print_table(local_data, 'name', 'type', 't1', 't2', 'duration')
+    print_table(data, 'name', 'type', 't1', 't2', 'duration')
     
 
 #def stats(args):
