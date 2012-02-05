@@ -7,6 +7,7 @@ import urllib
 import requests
 
 import serializers as _serializers
+from regularity.utils import recurse
 
 def require_client(func):
     '''Wrap a function to check that requires the API to be bound to a client.
@@ -113,7 +114,7 @@ class API(object):
             'time' : _serializers.datetime
         })
 
-        return self._localize_data(data, 'time')
+        return self.localize(data, 'time')
     
     @require_client
     def dot(self, timeline, activity, time): 
@@ -138,7 +139,7 @@ class API(object):
             'time' : _serializers.datetime
         })
 
-        return self._localize_datum(data, 'time')
+        return self.localize(data, 'time')
     
     @require_client
     def dashes(self, name=None, limit=10):
@@ -156,7 +157,7 @@ class API(object):
             'end' : _serializers.datetime
         })
 
-        return self._localize_data(data, 'start', 'end')
+        return self.localize(data, 'start', 'end')
     
     @require_client
     def dash(self, timeline, activity, start, end): 
@@ -185,7 +186,7 @@ class API(object):
             'end' : _serializers.datetime
         })
 
-        return self._localize_datum(data, 'start', 'end')
+        return self.localize(data, 'start', 'end')
 
     @require_client
     def pendings(self, name=None, limit=10):
@@ -202,7 +203,7 @@ class API(object):
             'start' : _serializers.datetime
         })
 
-        return self._localize_data(data, 'start', 'end')
+        return self.localize(data, 'start', 'end')
     
     @require_client
     def pending(self, timeline, activity, start): 
@@ -229,37 +230,21 @@ class API(object):
             'end' : _serializers.datetime,
         })
 
-        return self._localize_datum(data, 'start', 'end')
+        return self.localize(data, 'start', 'end')
 
-    def _localize_data(self, data, *args):
-        '''Convert datetimes in data from UTC to another timezone
+    def localize(self, o, *args):
+        '''Localize the specified keys in o, where o can be arbitrarily nested 
+           lists, dicts, tuples and/or sets.
 
-           @param data : iterable(dict)
-               an iterable of dicts
-           @param args : positional paramaters
-               the keys to convert from UTC to another timezone'''
+           @param o : list|dict|tuple|set
+               the object to search through for the keys
+           @param args : positional arguments
+               the keys for datetimes that should be localized'''
 
-        _data = list()
+        keys = set(args)
+        def callback(key, value):
+            if key in keys:
+                return times.to_local(value, self.timezone)
 
-        for d in data:
-            _data.append(self._localize_datum(d, *args))
+        return recurse(o, callback)
 
-        return tuple(_data)
-
-    def _localize_datum(self, datum, *args):
-        '''Convert datetimes in one line of data from UTC to another timezone
-
-           @param datum : dict
-               a dict
-           @param args : positional paramaters
-               the keys to convert from UTC to another timezone'''
-
-        _datum = deepcopy(datum)
-
-        for arg in args:
-            t = _datum.get(arg)
-            if t is None:
-                continue
-            _datum[arg] = times.to_local(t, self.timezone)
-
-        return _datum
