@@ -23,7 +23,7 @@ def serialize(o, **kwargs):
             function = kwargs[key]
             return function(value)
 
-    recurse(o, callback)
+    return recurse(o, callback)
     
 _int = int
 def int(o):

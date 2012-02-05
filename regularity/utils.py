@@ -18,27 +18,28 @@ def recurse(o, callback, key=None):
            a tuple of the dictionary keys that have been processed to get to 
            this point in the object'''
 
-    if isinstance(o, list):
+    if isinstance(o, (list, tuple, set)):
+        _o = list()
         for i in xrange(len(o)):
-            _value = recurse(o[i], callback, key=key)
+            _o.append(recurse(o[i], callback, key=key))
 
-            if _value is not None:
-                o[i] = _value
+        return _o
 
     elif isinstance(o, dict):
         if key is None:
             key = tuple()
 
+        _o = dict()
         for _key in o:
-            _value = recurse(o[_key], callback, key + (_key,))
+            _o[_key] = recurse(o[_key], callback, key + (_key,))
 
-            if _value is not None:
-                o[_key] = _value
-
+        return _o
 
     else:
         _value = callback('.'.join(key), o)
-        return _value
+        if _value is not None:
+            return _value
+        return o
             
         
 

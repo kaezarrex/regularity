@@ -46,7 +46,7 @@ def request(url, method, data=None, serializers=None):
         data = json.loads(data)
 
         if data:
-            _serializers.serialize(data, **serializers)
+            data = _serializers.serialize(data, **serializers)
 
         return data
     else:
@@ -92,9 +92,9 @@ class API(object):
 
         url = self.url('/client/create')
 
-        data = request(url, 'post', serializers=dict(
-            _id=_serializers.object_id
-        ))
+        data = request(url, 'post', serializers={
+            '_id' : _serializers.object_id
+        })
 
         return data
     
@@ -109,9 +109,9 @@ class API(object):
 
         url = self.url('/client/%s/dot' % self.client, name=name, limit=limit)
 
-        data = request(url, 'get', serializers=dict(
-            time=_serializers.datetime
-        ))
+        data = request(url, 'get', serializers={
+            'time' : _serializers.datetime
+        })
 
         return self._localize_data(data, 'time')
     
@@ -134,9 +134,9 @@ class API(object):
             time=time
         )
 
-        data = request(url, 'post', data=data, serializers=dict(
-            time=_serializers.datetime
-        ))
+        data = request(url, 'post', data=data, serializers={
+            'time' : _serializers.datetime
+        })
 
         return self._localize_datum(data, 'time')
     
@@ -151,10 +151,10 @@ class API(object):
 
         url = self.url('/client/%s/dash' % self.client, name=name, limit=limit)
 
-        data = request(url, 'get', serializers=dict(
-            start=_serializers.datetime,
-            end=_serializers.datetime
-        ))
+        data = request(url, 'get', serializers={
+            'start' : _serializers.datetime,
+            'end' : _serializers.datetime
+        })
 
         return self._localize_data(data, 'start', 'end')
     
@@ -180,10 +180,10 @@ class API(object):
             end=end
         )
 
-        data = request(url, 'post', data=data, serializers=dict(
-            start=_serializers.datetime,
-            end=_serializers.datetime
-        ))
+        data = request(url, 'post', data=data, serializers={
+            'start' : _serializers.datetime,
+            'end' : _serializers.datetime
+        })
 
         return self._localize_datum(data, 'start', 'end')
 
@@ -198,9 +198,9 @@ class API(object):
 
         url = self.url('/client/%s/pending' % self.client, name=name, limit=limit)
 
-        data = request(url, 'get', serializers=dict(
-            start=_serializers.datetime
-        ))
+        data = request(url, 'get', serializers={
+            'start' : _serializers.datetime
+        })
 
         return self._localize_data(data, 'start', 'end')
     
@@ -224,10 +224,10 @@ class API(object):
             start=start,
         )
 
-        data = request(url, 'post', data=data, serializers=dict(
-            start=_serializers.datetime,
-            end=_serializers.datetime,
-        ))
+        data = request(url, 'post', data=data, serializers={
+            'start' : _serializers.datetime,
+            'end' : _serializers.datetime,
+        })
 
         return self._localize_datum(data, 'start', 'end')
 
