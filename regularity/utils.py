@@ -8,6 +8,29 @@ def recurse(o, callback, key=None):
        same datatype. Every element in the same list will be passed to the 
        callback with the same key. That is just how this function works.
 
+       For example, if you have the object:
+
+       o = {
+           'a' : 1,
+           'b' : 2,
+           'c' : [3,4,5],
+           'd' : {
+               'e' : 6
+               'f' : [7,8]
+           }
+       }
+
+       then the callback will be called eight times, with the following parameters
+
+       'a', 1
+       'b', 2
+       'c', 3
+       'c', 4
+       'c', 5
+       'd.e', 6
+       'd.f', 7
+       'd.f', 8
+
        @param o : dict|list
            the object to recurse through
        @param callback : function(key, value) -> newvalue
