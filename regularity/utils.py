@@ -41,10 +41,10 @@ def recurse(o, callback, key=None):
            a tuple of the dictionary keys that have been processed to get to 
            this point in the object'''
 
-    if isinstance(o, (list, tuple, set)):
+    if isinstance(o, (list, tuple)):
         _o = list()
-        for i in xrange(len(o)):
-            _o.append(recurse(o[i], callback, key=key))
+        for i in o:
+            _o.append(recurse(i, callback, key=key))
 
         return _o
 
