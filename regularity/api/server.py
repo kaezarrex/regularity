@@ -64,7 +64,7 @@ class ClientAPI(object):
     @encode_json(**{
         '_id' : serializers.object_id
     })
-    def POST(self, data):
+    def POST(self):
         client = model.client()
 
         return client
