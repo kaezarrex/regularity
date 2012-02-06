@@ -135,7 +135,7 @@ if __name__ == "__main__":
         print str(e)
         sys.exit(1)
 
-    api = API(config['host'], config['port'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
 
     regularityd = RegularityDaemon(api)
     regularityd.run()
