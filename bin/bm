@@ -3,7 +3,6 @@
 import datetime
 from itertools import imap, izip
 import logging
-import math
 from operator import itemgetter
 import pytz
 import re
@@ -63,23 +62,16 @@ def parse_time_of_day(time):
 
     match = re.match(r'(2[0-3]|[0-1][0-9]):([0-5][0-9])$', time)
     if match:
-        hours = match.group(1)
-        minutes = match.group(2)
+        hours = int(match.group(1))
+        minutes = int(match.group(2))
 
         time = datetime.datetime.now()
-        time = time.replace(microsecond=0)
-
-        if hours is not None:
-            hours = int(hours)
-            time = time.replace(hour=hours)
-
-        if minutes is not None:
-            minutes = int(minutes)
-            time = time.replace(minute=minutes)
-
-        time = time.replace(second=0, microsecond=0)
+        time = time.replace(hour=hours, minute=minutes, second=0, microsecond=0)
 
         utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
+        utc_offset_seconds = round(utc_offset.total_seconds())
+        utc_offset = datetime.timedelta(seconds=utc_offset_seconds)
+
         return time + utc_offset
 
     return None
@@ -239,12 +231,12 @@ def dash(args):
                 time.sleep(1.0)
             except KeyboardInterrupt:
                 running = False
+                print
 
         end = datetime.datetime.utcnow()
 
     data = api.dash(timeline, args.activity, start, end)
 
-    print
     print data['_id']
     print data['start']
     print data['end']
