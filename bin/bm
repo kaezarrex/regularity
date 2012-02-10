@@ -313,7 +313,7 @@ def list_(args):
 
     data.sort(key=sort_key)
 
-    print_table(data, 'name', 'type', 't1', 't2', 'duration')
+    print_table(data[-args.limit:], 'name', 'type', 't1', 't2', 'duration')
     
 
 #def stats(args):
