@@ -241,7 +241,7 @@ def dash(args):
     print data['start']
     print data['end']
 
-def pending( args):
+def pending(args):
     '''Log the start time of an ongoing activity, to be terminated at another
        time.
 
@@ -252,17 +252,22 @@ def pending( args):
     api = API(config['host'], config['port'], config['timezone'], client=config['client'])
 
     timeline = 'bm'
-    start = args.time
 
-    if not start:
-        start = datetime.datetime.utcnow()
+    if args.cancel:
+        api.cancel_pending(timeline, args.activity)
 
-    data = api.pending(timeline, args.activity, start)
+    else:
+        start = args.time
 
-    print data['_id']
-    print data['start']
-    if 'end' in data:
-        print data['end']
+        if not start:
+            start = datetime.datetime.utcnow()
+
+        data = api.pending(timeline, args.activity, start)
+
+        print data['_id']
+        print data['start']
+        if 'end' in data:
+            print data['end']
 
 def list_(args):
     '''List the events requested in args.
@@ -402,10 +407,12 @@ if __name__ == "__main__":
     dash_parser.add_argument('time2', type=parse_time, nargs='?', metavar='time')
     dash_parser.set_defaults(func=dash)
 
-    dash_parser = subparsers.add_parser('?')
-    dash_parser.add_argument('activity')
-    dash_parser.add_argument('time', type=parse_time, nargs='?', metavar='time')
-    dash_parser.set_defaults(func=pending)
+    pending_parser = subparsers.add_parser('?')
+    pending_parser.add_argument('activity')
+    group = pending_parser.add_mutually_exclusive_group()
+    group.add_argument('time', type=parse_time, nargs='?', metavar='time')
+    group.add_argument('--cancel', action='store_true', default=False)
+    pending_parser.set_defaults(func=pending)
 
     list_parser = subparsers.add_parser('list')
     list_parser.add_argument('types', nargs='?', default='.-?')

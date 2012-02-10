@@ -52,10 +52,12 @@ def encode_json(**kwargs):
             kwargs.update(data)
             data = func(*args, **kwargs)
 
-            data = serializers.serialize(data, **_serializers)
+            if data is not None:
+                data = serializers.serialize(data, **_serializers)
+                return json.dumps(data)
 
             web.header('Content-Type', 'application/json')
-            return json.dumps(data)
+            
         return wrapper
     return decorator
 
@@ -148,5 +150,12 @@ class PendingAPI(object):
         pending = model.pending(client, timeline, activity, start)
 
         return pending
+
+class PendingInstanceAPI(object):
+
+    @encode_json()
+    def DELETE(self, client, timeline, activity):
+
+        model.cancel_pending(client, timeline, activity)
 
 

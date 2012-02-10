@@ -336,6 +336,25 @@ class Model(object):
 
             return pending
 
+    def cancel_pending(self, client, timeline_name, name):
+        '''Cancel a pending that hasn't been completed yet.
+
+           @param client : str
+               the name of the client to which the event belongs
+           @param timeline_name : str
+               name of the timeline
+           @param name : str
+               name of the activity'''
+
+        pending = self.db.pendings.find_one({
+            'client' : client,
+            'timeline' : timeline_name,
+            'name' : name,
+        })
+
+        if pending is not None:
+            self.db.pendings.remove(pending)
+
     def pendings(self, client, limit=10, **kwargs):
         '''Perform a general query for pendings. By default, will return all
            events unless filtering criteria are specified in kwargs.

@@ -32,11 +32,11 @@ def request(url, method, data=None, serializers=None):
            the url to hit
        @param data : optional, dict
            the data to include
-       @param serializers : dict
+       @param serializers : optional, dict
            a mapping of serializer functions for any fields that need so'''
-
+    
     # serialize any fields that need so
-    if data:
+    if data and serializers is not None:
         data = _serializers.serialize(data, **serializers)
 
     method_fn = getattr(requests, method)
@@ -44,9 +44,9 @@ def request(url, method, data=None, serializers=None):
 
     if 200 == response.status_code:
         data = response.content
-        data = json.loads(data)
 
-        if data:
+        if data and serializers is not None:
+            data = json.loads(data)
             data = _serializers.serialize(data, **serializers)
 
         return data
@@ -231,6 +231,21 @@ class API(object):
         })
 
         return self.localize(data, 'start', 'end')
+
+    @require_client
+    def cancel_pending(self, timeline, activity):
+        '''Cancel a pending that hasn't been completed yet.
+
+           @param client : str
+               the name of the client to which the event belongs
+           @param timeline_name : str
+               name of the timeline
+           @param name : str
+               name of the activity'''
+
+        url = self.url('/client/%s/pending/%s/%s' % (self.client, timeline, activity))
+
+        data = request(url, 'delete')
 
     def localize(self, o, *args):
         '''Localize the specified keys in o, where o can be arbitrarily nested 
