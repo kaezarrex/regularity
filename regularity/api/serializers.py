@@ -3,7 +3,7 @@ import datetime as _datetime
 
 from pymongo.objectid import ObjectId
 
-from regularity.utils import recurse
+from regularity.core.recurse import recurse
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 

@@ -7,7 +7,7 @@ import urllib
 import requests
 
 import serializers as _serializers
-from regularity.utils import recurse
+from regularity.core.recurse import recurse
 
 def require_client(func):
     '''Wrap a function to check that requires the API to be bound to a client.

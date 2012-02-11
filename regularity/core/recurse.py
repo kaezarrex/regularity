@@ -1,5 +1,4 @@
 
-
 def recurse(o, callback, key=None):
     '''Recurse through an arbitrary nesting of dicts and lists, calling the 
        callback at each key.

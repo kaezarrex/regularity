@@ -9,7 +9,7 @@ import os
 import sys
 
 from regularity.api.client import API
-from regularity.config import load_config
+from regularity.core.config import load_config
 
 class RegularityDaemon(object):
 
