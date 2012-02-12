@@ -378,3 +378,36 @@ class Model(object):
 
         return tuple(query)
 
+    def search(self, client, search_dots=True, search_dashes=True, search_pendings=True, **kwargs):
+        '''Search through the database for events that match the criteria.
+
+           @param client : str
+               the name of the client whose events will be searched
+           @param search_dots : optional, bool
+               a flag controlling whether dots are searched
+           @param search_dashes : optional, bool
+               a flag controlling whether dashes are searched
+           @param search_pendings : optional, bool
+               a flag controlling whether pendings are searched
+           @param kwargs : keyword arguments
+               search criteria for the events to find:
+               
+               name : str
+                   the name of the events to look for'''
+
+        data = dict()
+
+        if search_dots:
+            dots = self.dots(client, **kwargs)
+            data['dots'] = dots
+
+        if search_dashes:
+            dashes = self.dashes(client, **kwargs)
+            data['dashes'] = dashes
+        
+        if search_pendings:
+            pendings = self.pendings(client, **kwargs)
+            data['pendings'] = pendings
+
+        return results
+
