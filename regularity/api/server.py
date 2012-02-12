@@ -79,9 +79,9 @@ class DotAPI(object):
         'time' : serializers.datetime
     })
     def GET(self, client, name=None, limit=10):
-        dots = model.dots(client, name=name, limit=limit)
+        dots = model.dots(client, name=name)
 
-        return dots
+        return dots[-limit:]
 
     @encode_json(**{
         '_id' : serializers.object_id, 
@@ -105,9 +105,9 @@ class DashAPI(object):
         'end' : serializers.datetime
     })
     def GET(self, client, name=None, limit=10):
-        dashes = model.dashes(client, name=name, limit=limit)
+        dashes = model.dashes(client, name=name)
 
-        return dashes
+        return dashes[-limit:]
 
 
     @encode_json(**{
@@ -133,9 +133,9 @@ class PendingAPI(object):
         'start' : serializers.datetime
     })
     def GET(self, client, name=None, limit=10):
-        pendings = model.pendings(client, name=name, limit=limit)
+        pendings = model.pendings(client, name=name)
 
-        return pendings
+        return pendings[-limit:]
 
     @encode_json(**{
         '_id' : serializers.object_id, 
