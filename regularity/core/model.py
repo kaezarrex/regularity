@@ -409,5 +409,5 @@ class Model(object):
             pendings = self.pendings(client, **kwargs)
             data['pendings'] = pendings
 
-        return results
+        return data
 
