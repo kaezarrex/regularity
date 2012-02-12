@@ -25,17 +25,15 @@ def splice(dots=None, dashes=None, pendings=None, reverse=False):
 
     for dot in dots:
         dot['type'] = 'dot'
+        dot['key'] = dot['time']
 
     for dash in dashes:
         dash['type'] = 'dash'
+        dash['key'] = dash['end']
 
     for pending in pendings:
         pending['type'] = 'pending'
+        pending['key'] = pending['start']
 
-    keys_dots = ((d['time'], d) for d in dots)
-    keys_dashes = ((d['end'], d) for d in dashes)
-    keys_pendings = ((p['start'], p) for p in pendings)
-
-    keys_items = sorted(chain(keys_dots, keys_dashes, keys_pendings), key=itemgetter(0), reverse=reverse)
-    return map(itemgetter(1), keys_items)
+    return sorted(chain(dots, dashes, pendings), key=itemgetter('key'), reverse=reverse)
 
