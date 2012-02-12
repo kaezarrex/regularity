@@ -1,5 +1,6 @@
 import datetime
 import pymongo
+import pymongo.objectid
 
 class Model(object):
 
@@ -89,6 +90,36 @@ class Model(object):
 
         return data
 
+    def object_by_id(self, client, object_id, object_types=None):
+        '''Get the object belonging to the specified client and having the 
+           specified id.
+
+           @param client : str
+               the id of the client the object belongs to
+           @param object_id : str
+               the id of the object
+           @param object_types : optional, str|list(str)|tuple(str)
+               the type of objects to search - if None, then every collection 
+               will be searched, otherwise only the specified collection will 
+               be searched - valid values are 'dots', 'dashs', 'pendings'.'''
+
+        if object_types is None:
+            object_types = ('dots', 'dashes', 'pendings')
+        elif isinstance(object_types, basestring):
+            object_types = (object_types,)
+
+        criteria = {
+            '_id' : pymongo.objectid.ObjectId(object_id),
+            'client' : client,
+        }
+
+        for collection in object_types:
+            print getattr(self.db, collection)
+            obj = getattr(self.db, collection).find_one(criteria)
+
+            if obj:
+                return obj
+
     def client(self):
         '''Create a new client.'''
 
@@ -142,7 +173,7 @@ class Model(object):
             criteria['timeline'] = timeline
 
         query = self.db.dots.find(criteria)
-        query = query.sort('time', -1)
+        query = query.sort('time', 1)
 
         return tuple(query)
 
@@ -252,7 +283,7 @@ class Model(object):
             criteria['timeline'] = timeline
 
         query = self.db.dashes.find(criteria)
-        query = query.sort('end', -1)
+        query = query.sort('end', 1)
 
         return tuple(query)
 
@@ -374,7 +405,7 @@ class Model(object):
             criteria['timeline'] = timeline
 
         query = self.db.pendings.find(criteria)
-        query = query.sort('start', -1)
+        query = query.sort('start', 1)
 
         return tuple(query)
 
