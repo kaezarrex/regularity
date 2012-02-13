@@ -2,7 +2,7 @@
 
 from setuptools import setup, find_packages
 
-import regularity
+import regularity.core
 
 requirements = list()
 with open('requirements.txt', 'r') as requirements_file:
@@ -11,7 +11,7 @@ with open('requirements.txt', 'r') as requirements_file:
 
 setup(
     name='Regularity',
-    version=regularity.__version__,
+    version=regularity.core.__version__,
     description='For people who want to see how they use their time',
     author='Tim Johnson',
     packages=find_packages(),
