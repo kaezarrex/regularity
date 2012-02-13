@@ -6,7 +6,7 @@ import urllib
 
 import requests
 
-import serializers as _serializers
+from regularity.core import serializers as _serializers
 from regularity.core.recurse import recurse
 
 def require_client(func):
@@ -108,7 +108,7 @@ class API(object):
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/client/%s/dot' % self.client, name=name, limit=limit)
+        url = self.url('/users/%s/dots.json' % self.client, name=name, limit=limit)
 
         data = request(url, 'get', serializers={
             'time' : _serializers.datetime
@@ -127,7 +127,7 @@ class API(object):
            @param time : datetime
                the UTC time of the event'''
 
-        url = self.url('/client/%s/dot' % self.client)
+        url = self.url('/users/%s/dots.json' % self.client)
 
         data = dict(
             timeline=timeline,
@@ -150,7 +150,7 @@ class API(object):
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/client/%s/dash' % self.client, name=name, limit=limit)
+        url = self.url('/users/%s/dashes.json' % self.client, name=name, limit=limit)
 
         data = request(url, 'get', serializers={
             'start' : _serializers.datetime,
@@ -172,7 +172,7 @@ class API(object):
            @param end : datetime
                the UTC time of the end of the activity'''
 
-        url = self.url('/client/%s/dash' % self.client)
+        url = self.url('/users/%s/dashes.json' % self.client)
 
         data = dict(
             timeline=timeline,
@@ -197,7 +197,7 @@ class API(object):
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/client/%s/pending' % self.client, name=name, limit=limit)
+        url = self.url('/users/%s/pendings.json' % self.client, name=name, limit=limit)
 
         data = request(url, 'get', serializers={
             'start' : _serializers.datetime
@@ -217,7 +217,7 @@ class API(object):
            @param start : datetime
                the UTC time of the start of the activity'''
 
-        url = self.url('/client/%s/pending' % self.client)
+        url = self.url('/users/%s/pendings.json' % self.client)
 
         data = dict(
             timeline=timeline,

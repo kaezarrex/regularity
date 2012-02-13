@@ -6,7 +6,7 @@ import urlparse
 
 import web
 
-import serializers
+from regularity.core import serializers
 from regularity.core.model import Model
 
 config_path = os.environ.get('REGULARITY_API_CONFIG')

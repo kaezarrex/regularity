@@ -58,6 +58,7 @@ def recurse(o, callback, key=None):
         return _o
 
     else:
+        
         _value = callback('.'.join(key), o)
         if _value is not None:
             return _value
