@@ -1,4 +1,6 @@
 import datetime
+import re
+
 import pymongo
 import pymongo.objectid
 
@@ -207,7 +209,7 @@ class Model(object):
 
         name = kwargs.get('name')
         if name:
-            criteria['name'] = name
+            criteria['name'] = re.compile(re.escape(name), re.IGNORECASE)
 
         timeline = kwargs.get('timeline')
         if timeline:
@@ -343,7 +345,7 @@ class Model(object):
 
         name = kwargs.get('name')
         if name:
-            criteria['name'] = name
+            criteria['name'] = re.compile(re.escape(name), re.IGNORECASE)
 
         timeline = kwargs.get('timeline')
         if timeline:
@@ -491,7 +493,7 @@ class Model(object):
 
         name = kwargs.get('name')
         if name:
-            criteria['name'] = name
+            criteria['name'] = re.compile(re.escape(name), re.IGNORECASE)
 
         timeline = kwargs.get('timeline')
         if timeline:
