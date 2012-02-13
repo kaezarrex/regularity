@@ -2,6 +2,19 @@ import datetime
 import pymongo
 import pymongo.objectid
 
+class RegularityValidationError(Exception):
+    '''An exception due to one or more fields not validating.'''
+
+    def __init__(self, **kwargs):
+        '''Create the exception.
+
+           @param kwargs : keyword arguments
+               the fields that did not validate - this is a mapping from field
+               -> error message'''
+
+        super(RegularityValidationError, self).__init__()
+        self.fields = fields
+
 class Model(object):
 
     CONTIGUITY_THRESHOLD = 5 # seconds
@@ -96,12 +109,15 @@ class Model(object):
 
            @param client : str
                the id of the client the object belongs to
-           @param object_id : str
+           @param object_id : str|pymongo.objectid.ObjectId
                the id of the object
            @param object_types : optional, str|list(str)|tuple(str)
                the type of objects to search - if None, then every collection 
                will be searched, otherwise only the specified collection will 
                be searched - valid values are 'dots', 'dashs', 'pendings'.'''
+
+        if isinstance(object_id, basestring):
+            object_id = pymongo.objectid.ObjectId(object_id)
 
         if object_types is None:
             object_types = ('dots', 'dashes', 'pendings')
@@ -109,12 +125,11 @@ class Model(object):
             object_types = (object_types,)
 
         criteria = {
-            '_id' : pymongo.objectid.ObjectId(object_id),
+            '_id' : object_id,
             'client' : client,
         }
 
         for collection in object_types:
-            print getattr(self.db, collection)
             obj = getattr(self.db, collection).find_one(criteria)
 
             if obj:
@@ -126,6 +141,32 @@ class Model(object):
         client = dict()
         self.db.clients.insert(client)
         return client
+
+    def update_dot(self, client, dot):
+        '''Update the dot in the database.
+
+           @param client : str
+               the client that owns the dot
+           @param dot : dict
+               the dot to update'''
+
+        _id = dot.get('_id')
+
+        if _id is None:
+            raise ValueError('_id cannot be None')
+
+        #TODO full validation of the dot object
+
+        criteria = {
+            '_id' : _id,
+            'client' : client
+        }
+
+        dot = dict(dot)
+        dot.pop('_id')
+        self.db.dots.update(criteria, {'$set' : dot})
+
+        return self.object_by_id(client, _id, 'dots')
 
     def dot(self, client, timeline_name, name, time=None, **kwargs):
         '''Log the occurence of an instaneous activity to the specified
@@ -213,6 +254,32 @@ class Model(object):
         overlapping = tuple(query)
 
         return overlapping
+
+    def update_dash(self, client, dash):
+        '''Update the dash in the database.
+
+           @param client : str
+               the client that owns the dash
+           @param dash : dict
+               the dash to update'''
+
+        _id = dash.get('_id')
+
+        if _id is None:
+            raise ValueError('_id cannot be None')
+            
+        # TODO full validation of the dash object
+
+        criteria = {
+            '_id' : _id,
+            'client' : client
+        }
+
+        dash = dict(dash)
+        dash.pop('_id')
+        self.db.dashes.update(criteria, {'$set' : dash})
+
+        return self.object_by_id(client, _id, 'dashes')
 
     def dash(self, client, timeline_name, name, start=None, end=None, **kwargs):
         '''Log the occurence of a ranged activity to the specified timeline.
@@ -324,6 +391,32 @@ class Model(object):
         overlapping = tuple(query)
 
         return overlapping
+
+    def update_pending(self, client, pending):
+        '''Update the pending to the database.
+
+           @param client : str
+               the client that owns the pending
+           @param pending : dict
+               the pending to update'''
+
+        _id = pending.get('_id')
+
+        if _id is None:
+            raise ValueError('_id cannot be None')
+
+        #TODO full validation of the pending object
+
+        criteria = {
+            '_id' : _id,
+            'client' : client
+        }
+
+        pending = dict(pending)
+        pending.pop('_id')
+        self.db.pendings.update(criteria, {'$set' : pending})
+
+        return self.object_by_id(client, _id, 'pendings')
 
     def pending(self, client, timeline_name, name, time=None):
         '''Log the beginning of a ranged activity to the specified timeline.
