@@ -16,6 +16,7 @@ setup(
     author='Tim Johnson',
     packages=find_packages(),
     namespace_packages=['regularity'],
+    include_package_data=True,
     install_requires=requirements,
     scripts=['bin/bm', 'bin/regularityd', 'bin/regularity-api']
 )
