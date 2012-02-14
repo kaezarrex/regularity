@@ -37,12 +37,12 @@ class Model(object):
 
         self.db = db
 
-    def _build_dot(self, client, timeline_name, name, time):
+    def _build_dot(self, user, timeline_name, name, time):
         '''Helper function for building a dot object to be saved to the
            database.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
            @param name : str
@@ -51,19 +51,19 @@ class Model(object):
                the time of the dot, in UTC'''
 
         return dict(
-            client=client,
+            user=user,
             timeline=timeline_name,
             name=name,
             time=time,
         )
 
 
-    def _build_event(self, client, timeline_name, name, start, end):
+    def _build_event(self, user, timeline_name, name, start, end):
         '''Helper function for building an event object to be saved to the
            database.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
            @param name : str
@@ -74,7 +74,7 @@ class Model(object):
                the end time of the activity, in UTC'''
 
         data = dict(
-            client=client,
+            user=user,
             timeline=timeline_name,
             name=name,
             start=start,
@@ -83,12 +83,12 @@ class Model(object):
 
         return data
     
-    def _build_pending(self, client, timeline_name, name, start):
+    def _build_pending(self, user, timeline_name, name, start):
         '''Helper function for building a pending object to be saved to the 
            database.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                the name of the timeline to scan for overlapping activities
            @param name : str
@@ -97,7 +97,7 @@ class Model(object):
                the start time of the activity, in UTC'''
         
         data = dict(
-            client=client,
+            user=user,
             timeline=timeline_name,
             name=name,
             start=start,
@@ -105,12 +105,12 @@ class Model(object):
 
         return data
 
-    def object_by_id(self, client, object_id, object_types=None):
-        '''Get the object belonging to the specified client and having the 
+    def object_by_id(self, user, object_id, object_types=None):
+        '''Get the object belonging to the specified user and having the 
            specified id.
 
-           @param client : str
-               the id of the client the object belongs to
+           @param user : str
+               the id of the user the object belongs to
            @param object_id : str|pymongo.objectid.ObjectId
                the id of the object
            @param object_types : optional, str|list(str)|tuple(str)
@@ -128,7 +128,7 @@ class Model(object):
 
         criteria = {
             '_id' : object_id,
-            'client' : client,
+            'user' : user,
         }
 
         for collection in object_types:
@@ -137,18 +137,18 @@ class Model(object):
             if obj:
                 return obj
 
-    def client(self):
-        '''Create a new client.'''
+    def user(self):
+        '''Create a new user.'''
 
-        client = dict()
-        self.db.clients.insert(client)
-        return client
+        user = dict()
+        self.db.users.insert(user)
+        return user
 
-    def update_dot(self, client, dot):
+    def update_dot(self, user, dot):
         '''Update the dot in the database.
 
-           @param client : str
-               the client that owns the dot
+           @param user : str
+               the user that owns the dot
            @param dot : dict
                the dot to update'''
 
@@ -161,21 +161,21 @@ class Model(object):
 
         criteria = {
             '_id' : _id,
-            'client' : client
+            'user' : user
         }
 
         dot = dict(dot)
         dot.pop('_id')
         self.db.dots.update(criteria, {'$set' : dot})
 
-        return self.object_by_id(client, _id, 'dots')
+        return self.object_by_id(user, _id, 'dots')
 
-    def dot(self, client, timeline_name, name, time=None, **kwargs):
+    def dot(self, user, timeline_name, name, time=None, **kwargs):
         '''Log the occurence of an instaneous activity to the specified
            timeline.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                name of the timeline
            @param name : str
@@ -186,17 +186,17 @@ class Model(object):
         if time is None:
             time = datetime.datetime.utcnow()
 
-        dot = self._build_dot(client, timeline_name, name, time)
+        dot = self._build_dot(user, timeline_name, name, time)
         self.db.dots.insert(dot)
         
         return dot
 
-    def dots(self, client, **kwargs):
+    def dots(self, user, **kwargs):
         '''Perform a general query for dots. By default, will return all events 
            unless filtering criteria are specified in kwargs.
            
-           @param client : str
-               the id of the client to which the event belongs
+           @param user : str
+               the id of the user to which the event belongs
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
@@ -204,7 +204,7 @@ class Model(object):
                timeline - the name of the timeline'''
 
         criteria = {
-            'client' : client
+            'user' : user
         }
 
         name = kwargs.get('name')
@@ -220,12 +220,12 @@ class Model(object):
 
         return tuple(query)
 
-    def overlapping_dots(self, client, start, end, buffer_=None, **kwargs):
+    def overlapping_dots(self, user, start, end, buffer_=None, **kwargs):
         '''Return timeline dots that overlap with the time denoted by start
            and end
            
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param start : datetime
                the start time of the activity
            @param end : datetime
@@ -245,7 +245,7 @@ class Model(object):
 
         criteria = kwargs
         criteria.update({
-            'client' : client,
+            'user' : user,
             '$nor' : [
                 { 'time' : { '$gt' : end } },
                 { 'time' : { '$lt' : start } },
@@ -257,11 +257,11 @@ class Model(object):
 
         return overlapping
 
-    def update_dash(self, client, dash):
+    def update_dash(self, user, dash):
         '''Update the dash in the database.
 
-           @param client : str
-               the client that owns the dash
+           @param user : str
+               the user that owns the dash
            @param dash : dict
                the dash to update'''
 
@@ -274,20 +274,20 @@ class Model(object):
 
         criteria = {
             '_id' : _id,
-            'client' : client
+            'user' : user
         }
 
         dash = dict(dash)
         dash.pop('_id')
         self.db.dashes.update(criteria, {'$set' : dash})
 
-        return self.object_by_id(client, _id, 'dashes')
+        return self.object_by_id(user, _id, 'dashes')
 
-    def dash(self, client, timeline_name, name, start=None, end=None, **kwargs):
+    def dash(self, user, timeline_name, name, start=None, end=None, **kwargs):
         '''Log the occurence of a ranged activity to the specified timeline.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                name of the timeline
            @param name : str
@@ -305,14 +305,14 @@ class Model(object):
 
         union = kwargs.get('union', True)
 
-        dash = self._build_event(client, timeline_name, name, start, end)
+        dash = self._build_event(user, timeline_name, name, start, end)
 
         if union:
             extra_criteria = {
                 'timeline' : timeline_name,
                 'name' : name
             }
-            overlapping_activities = self.overlapping_dashes(client, start, end, **extra_criteria)
+            overlapping_activities = self.overlapping_dashes(user, start, end, **extra_criteria)
 
             if overlapping_activities:
                 # consolidate all the overlapping activities into one
@@ -327,12 +327,12 @@ class Model(object):
         self.db.dashes.save(dash)
         return dash
 
-    def dashes(self, client, **kwargs):
+    def dashes(self, user, **kwargs):
         '''Perform a general query for dashes. By default, will return all
            events unless filtering criteria are specified in kwargs.
            
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
@@ -340,7 +340,7 @@ class Model(object):
                timeline - the name of the timeline'''
 
         criteria = {
-            'client' : client
+            'user' : user
         }
 
         name = kwargs.get('name')
@@ -356,12 +356,12 @@ class Model(object):
 
         return tuple(query)
 
-    def overlapping_dashes(self, client, start, end, buffer_=None, **kwargs):
+    def overlapping_dashes(self, user, start, end, buffer_=None, **kwargs):
         '''Return timeline dashes that overlap with the time denoted by start
            and end
            
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param start : datetime
                the start time of the activity
            @param end : datetime
@@ -381,7 +381,7 @@ class Model(object):
 
         criteria = kwargs
         criteria.update({
-            'client' : client,
+            'user' : user,
             '$nor' : [
                 { 'start' : { '$gt' : end } },
                 { 'end' : { '$lt' : start } },
@@ -394,11 +394,11 @@ class Model(object):
 
         return overlapping
 
-    def update_pending(self, client, pending):
+    def update_pending(self, user, pending):
         '''Update the pending to the database.
 
-           @param client : str
-               the client that owns the pending
+           @param user : str
+               the user that owns the pending
            @param pending : dict
                the pending to update'''
 
@@ -411,20 +411,20 @@ class Model(object):
 
         criteria = {
             '_id' : _id,
-            'client' : client
+            'user' : user
         }
 
         pending = dict(pending)
         pending.pop('_id')
         self.db.pendings.update(criteria, {'$set' : pending})
 
-        return self.object_by_id(client, _id, 'pendings')
+        return self.object_by_id(user, _id, 'pendings')
 
-    def pending(self, client, timeline_name, name, time=None):
+    def pending(self, user, timeline_name, name, time=None):
         '''Log the beginning of a ranged activity to the specified timeline.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                name of the timeline
            @param name : str
@@ -434,7 +434,7 @@ class Model(object):
 
         # look for an existing pending first
         pending = self.db.pendings.find_one({
-            'client' : client,
+            'user' : user,
             'timeline' : timeline_name,
             'name' : name,
         })
@@ -442,7 +442,7 @@ class Model(object):
         if pending is not None:
             self.db.pendings.remove(pending)
 
-            dash = self.dash(client, pending['timeline'], pending['name'], pending['start'], time)
+            dash = self.dash(user, pending['timeline'], pending['name'], pending['start'], time)
 
             return dash
 
@@ -451,23 +451,23 @@ class Model(object):
             if time is None:
                 time = datetime.datetime.utcnow()
 
-            pending = self._build_pending(client, timeline_name, name, time)
+            pending = self._build_pending(user, timeline_name, name, time)
             self.db.pendings.insert(pending)
 
             return pending
 
-    def cancel_pending(self, client, timeline_name, name):
+    def cancel_pending(self, user, timeline_name, name):
         '''Cancel a pending that hasn't been completed yet.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                name of the timeline
            @param name : str
                name of the activity'''
 
         pending = self.db.pendings.find_one({
-            'client' : client,
+            'user' : user,
             'timeline' : timeline_name,
             'name' : name,
         })
@@ -475,12 +475,12 @@ class Model(object):
         if pending is not None:
             self.db.pendings.remove(pending)
 
-    def pendings(self, client, **kwargs):
+    def pendings(self, user, **kwargs):
         '''Perform a general query for pendings. By default, will return all
            events unless filtering criteria are specified in kwargs.
            
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param kwargs : 
                mapping from keyword to list of values - valid keys are:
 
@@ -488,7 +488,7 @@ class Model(object):
                timeline - the name of the timeline'''
 
         criteria = {
-            'client' : client
+            'user' : user
         }
 
         name = kwargs.get('name')
@@ -504,11 +504,11 @@ class Model(object):
 
         return tuple(query)
 
-    def search(self, client, search_dots=True, search_dashes=True, search_pendings=True, **kwargs):
+    def search(self, user, search_dots=True, search_dashes=True, search_pendings=True, **kwargs):
         '''Search through the database for events that match the criteria.
 
-           @param client : str
-               the name of the client whose events will be searched
+           @param user : str
+               the name of the user whose events will be searched
            @param search_dots : optional, bool
                a flag controlling whether dots are searched
            @param search_dashes : optional, bool
@@ -524,15 +524,15 @@ class Model(object):
         data = dict()
 
         if search_dots:
-            dots = self.dots(client, **kwargs)
+            dots = self.dots(user, **kwargs)
             data['dots'] = dots
 
         if search_dashes:
-            dashes = self.dashes(client, **kwargs)
+            dashes = self.dashes(user, **kwargs)
             data['dashes'] = dashes
         
         if search_pendings:
-            pendings = self.pendings(client, **kwargs)
+            pendings = self.pendings(user, **kwargs)
             data['pendings'] = pendings
 
         return data

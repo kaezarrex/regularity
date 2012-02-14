@@ -9,17 +9,17 @@ import requests
 from regularity.core import serializers as _serializers
 from regularity.core.recurse import recurse
 
-def require_client(func):
-    '''Wrap a function to check that requires the API to be bound to a client.
+def require_user(func):
+    '''Wrap a function to check that requires the API to be bound to a user.
        Does the necessary checking and throws an error if it is not bound to a
-       client.
+       user.
 
        @param func: function
            the function to decorate'''
 
     def wrapper(self, *args, **kwargs):
-        if not hasattr(self, 'client') or self.client is None:
-            raise BaseException('client must be set for this call.')
+        if not hasattr(self, 'user') or self.user is None:
+            raise BaseException('user must be set for this call.')
 
         return func(self, *args, **kwargs)
     return wrapper
@@ -56,19 +56,19 @@ def request(url, method, data=None, serializers=None):
 
 class API(object):
 
-    def __init__(self, host, port, timezone, client=None):
-        '''Create the client-side api.
+    def __init__(self, host, port, timezone, user=None):
+        '''Create the user-side api.
 
            @param host : str
                the url of the server
            @param port : int
                the port number
-           @client : optional, str
-               the client id to bind the API to'''
+           @user : optional, str
+               the user id to bind the API to'''
 
         self.base_url = 'http://%s:%d' % (host, port)
         self.timezone = timezone
-        self.client = client
+        self.user = user
 
     def url(self, path, **kwargs):
         '''Form the url to hit for the API path.
@@ -88,10 +88,10 @@ class API(object):
         return url
 
     def init(self):
-        '''Register a new client on the server, and return the configuration
+        '''Register a new user on the server, and return the configuration
            information to store'''
 
-        url = self.url('/client/create')
+        url = self.url('/user/create')
 
         data = request(url, 'post', serializers={
             '_id' : _serializers.object_id
@@ -99,16 +99,16 @@ class API(object):
 
         return data
     
-    @require_client
+    @require_user
     def dots(self, name=None, limit=10):
-        '''List the dots on the server for this client.
+        '''List the dots on the server for this user.
         
            @param name : optional, str
                the name of the activity to retrieve 
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/users/%s/dots.json' % self.client, name=name, limit=limit)
+        url = self.url('/users/%s/dots.json' % self.user, name=name, limit=limit)
 
         data = request(url, 'get', serializers={
             'time' : _serializers.datetime
@@ -116,7 +116,7 @@ class API(object):
 
         return self.localize(data, 'time')
     
-    @require_client
+    @require_user
     def dot(self, timeline, activity, time): 
         '''Send a dot (an instantaneous event) to the server. 
            
@@ -127,7 +127,7 @@ class API(object):
            @param time : datetime
                the UTC time of the event'''
 
-        url = self.url('/users/%s/dots.json' % self.client)
+        url = self.url('/users/%s/dots.json' % self.user)
 
         data = dict(
             timeline=timeline,
@@ -141,16 +141,16 @@ class API(object):
 
         return self.localize(data, 'time')
     
-    @require_client
+    @require_user
     def dashes(self, name=None, limit=10):
-        '''Get the dashes for this client.
+        '''Get the dashes for this user.
         
            @param name : optional, str
                the name of the activity to retrieve 
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/users/%s/dashes.json' % self.client, name=name, limit=limit)
+        url = self.url('/users/%s/dashes.json' % self.user, name=name, limit=limit)
 
         data = request(url, 'get', serializers={
             'start' : _serializers.datetime,
@@ -159,7 +159,7 @@ class API(object):
 
         return self.localize(data, 'start', 'end')
     
-    @require_client
+    @require_user
     def dash(self, timeline, activity, start, end): 
         '''Send a ranged event (one that has a duration) to the server.
 
@@ -172,7 +172,7 @@ class API(object):
            @param end : datetime
                the UTC time of the end of the activity'''
 
-        url = self.url('/users/%s/dashes.json' % self.client)
+        url = self.url('/users/%s/dashes.json' % self.user)
 
         data = dict(
             timeline=timeline,
@@ -188,16 +188,16 @@ class API(object):
 
         return self.localize(data, 'start', 'end')
 
-    @require_client
+    @require_user
     def pendings(self, name=None, limit=10):
-        '''List the pendings for this client.
+        '''List the pendings for this user.
         
            @param name : optional, str
                the name of the activity to retrieve 
            @param limit : int
                the length to limit the results to'''
 
-        url = self.url('/users/%s/pendings.json' % self.client, name=name, limit=limit)
+        url = self.url('/users/%s/pendings.json' % self.user, name=name, limit=limit)
 
         data = request(url, 'get', serializers={
             'start' : _serializers.datetime
@@ -205,7 +205,7 @@ class API(object):
 
         return self.localize(data, 'start', 'end')
     
-    @require_client
+    @require_user
     def pending(self, timeline, activity, start): 
         '''Send a pending event (one whose end time is not known yet) to the 
            server
@@ -217,7 +217,7 @@ class API(object):
            @param start : datetime
                the UTC time of the start of the activity'''
 
-        url = self.url('/users/%s/pendings.json' % self.client)
+        url = self.url('/users/%s/pendings.json' % self.user)
 
         data = dict(
             timeline=timeline,
@@ -232,18 +232,18 @@ class API(object):
 
         return self.localize(data, 'start', 'end')
 
-    @require_client
+    @require_user
     def cancel_pending(self, timeline, activity):
         '''Cancel a pending that hasn't been completed yet.
 
-           @param client : str
-               the name of the client to which the event belongs
+           @param user : str
+               the name of the user to which the event belongs
            @param timeline_name : str
                name of the timeline
            @param name : str
                name of the activity'''
 
-        url = self.url('/client/%s/pending/%s/%s' % (self.client, timeline, activity))
+        url = self.url('/user/%s/pending/%s/%s' % (self.user, timeline, activity))
 
         data = request(url, 'delete')
 

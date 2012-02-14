@@ -145,20 +145,20 @@ def print_table(data, *args):
     print '\n'.join(table.iformatted_rows(column_joiner='   '))
 
 def init(args):
-    '''Initialize the configuration. Store the client information and the
+    '''Initialize the configuration. Store the user information and the
        server information for all subsequent uses.
 
        @param args : argparse.Namespace
            the parsed command line options'''
 
-    # reserve a client through the api
+    # reserve a user through the api
     api = API(args.host, args.port, args.timezone)
     data = api.init()
 
     # write out the preliminary configuration
     try:
         write_config(dict(
-            client=str(data['_id']),
+            user=str(data['_id']),
             host=args.host,
             port=args.port,
             timezone=args.timezone
@@ -189,7 +189,7 @@ def dot(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], user=config['user'])
 
     timeline = 'bm'
     time = args.time
@@ -209,7 +209,7 @@ def dash(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], user=config['user'])
 
 
     timeline = 'bm'
@@ -249,7 +249,7 @@ def pending(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], user=config['user'])
 
     timeline = 'bm'
 
@@ -276,7 +276,7 @@ def list_(args):
            the parsed command line options'''
 
     config = get_config(args.config)
-    api = API(config['host'], config['port'], config['timezone'], client=config['client'])
+    api = API(config['host'], config['port'], config['timezone'], user=config['user'])
 
     types = set(args.types)
 
