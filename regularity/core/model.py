@@ -202,7 +202,7 @@ class Model(object):
 
                name - the name of the event
                timeline - the name of the timeline'''
-
+        
         criteria = {
             'user' : user
         }
