@@ -15,6 +15,7 @@ setup(
     description='For people who want to see how they use their time',
     author='Tim Johnson',
     packages=find_packages(),
+    namespace_packages=['regularity'],
     install_requires=requirements,
     scripts=['bin/bm', 'bin/regularityd', 'bin/regularity-api']
 )
