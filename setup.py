@@ -10,7 +10,7 @@ with open('requirements.txt', 'r') as requirements_file:
         requirements.append(requirement)
 
 setup(
-    name='Regularity',
+    name='regularity.client',
     version=regularity.core.__version__,
     description='For people who want to see how they use their time',
     author='Tim Johnson',
