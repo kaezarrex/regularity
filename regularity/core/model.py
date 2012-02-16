@@ -57,7 +57,7 @@ class Model(object):
             timeline=timeline_name,
             name=name,
             time=time,
-            note=None
+            note=note,
         )
 
 
@@ -84,7 +84,7 @@ class Model(object):
             name=name,
             start=start,
             end=end,
-            note=None
+            note=note,
         )
 
         return data
@@ -109,7 +109,7 @@ class Model(object):
             timeline=timeline_name,
             name=name,
             start=start,
-            note=None
+            note=note,
         )
 
         return data
@@ -179,7 +179,7 @@ class Model(object):
 
         return self.object_by_id(user, _id, 'dots')
 
-    def dot(self, user, timeline_name, name, time=None, **kwargs):
+    def dot(self, user, timeline_name, name, time=None, note=None):
         '''Log the occurence of an instaneous activity to the specified
            timeline.
 
@@ -190,7 +190,9 @@ class Model(object):
            @param name : str
                name of the activity
            @param time : optional, datetime
-               the time of the activity, defaults to now'''
+               the time of the activity, defaults to now
+           @param note : optional, str
+               a note to attach to the dot'''
 
         if time is None:
             time = datetime.datetime.utcnow()
@@ -453,29 +455,49 @@ class Model(object):
            @param note : optional, str
                an optional note to attach to the pending'''
 
-        # look for an existing pending first
-        pending = self.db.pendings.find_one({
-            'user' : user,
-            'timeline' : timeline_name,
-            'name' : name,
-        })
+#        # look for an existing pending first
+#        pending = self.db.pendings.find_one({
+#            'user' : user,
+#            'timeline' : timeline_name,
+#            'name' : name,
+#        })
+#
+#        if pending is not None:
+#            self.db.pendings.remove(pending)
+#
+#            dash = self.dash(user, pending['timeline'], pending['name'], pending['start'], time)
+#
+#            return dash
+#
+#        else:
+
+        if time is None:
+            time = datetime.datetime.utcnow()
+
+        pending = self._build_pending(user, timeline_name, name, time, note=note)
+        self.db.pendings.insert(pending)
+
+        return pending
+
+    def finish_pending(self, user, object_id, time=None):
+        '''Finish a pending, and move it to the dashes collection.
+
+           @param user : str
+               the id of the user
+           @param object_id : str
+               the string representation of the pending's object id'''
+
+        if time is None:
+            time = datetime.datetime.utcnow()
+
+        pending = self.object_by_id(user, object_id, 'pendings')
 
         if pending is not None:
             self.db.pendings.remove(pending)
 
-            dash = self.dash(user, pending['timeline'], pending['name'], pending['start'], time)
+            dash = self.dash(user, pending['timeline'], pending['name'], pending['start'], time, note=pending.get('note'))
 
             return dash
-
-        else:
-
-            if time is None:
-                time = datetime.datetime.utcnow()
-
-            pending = self._build_pending(user, timeline_name, name, time, note=note)
-            self.db.pendings.insert(pending)
-
-            return pending
 
     def cancel_pending(self, user, timeline_name, name):
         '''Cancel a pending that hasn't been completed yet.
