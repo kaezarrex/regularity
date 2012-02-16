@@ -37,14 +37,23 @@ class RegularityDaemon(object):
         )
 
     def path_to_application(self, path):
-        '''Resolve an application dbus object path to a name.'''
+        '''Resolve an application dbus object path to a name.
+        
+           @param path : str
+               the DBus path of an application'''
 
-        application = self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
+        try:
+            application = self.bus.call_blocking('org.ayatana.bamf', path, 'org.ayatana.bamf.view', 'Name', None, tuple())
 
-        if application:
-            application = application.lower()
+            if application:
+                application = application.lower()
 
-        return application
+            return application
+
+        except dbus.DBusException:
+            logging.error("Could not resolve application path '%s' to a name")
+
+
 
     def on_active_application_changed(self, from_path, to_path):
         '''The signal handler for active application changes.
@@ -124,10 +133,13 @@ if __name__ == "__main__":
         logging.basicConfig(
             level=logging.DEBUG
         )
+        logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.INFO)
     else:
         logging.basicConfig(
             level=logging.INFO
         )
+        logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARN)
+
 
     try:
         config = load_config(args.config)
