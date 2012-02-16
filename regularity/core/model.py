@@ -37,7 +37,7 @@ class Model(object):
 
         self.db = db
 
-    def _build_dot(self, user, timeline_name, name, time):
+    def _build_dot(self, user, timeline_name, name, time, note=None):
         '''Helper function for building a dot object to be saved to the
            database.
 
@@ -48,17 +48,20 @@ class Model(object):
            @param name : str
                the name of the activity to create
            @param time : datetime
-               the time of the dot, in UTC'''
+               the time of the dot, in UTC
+           @param note : optional, str
+               an optional note about the dot'''
 
         return dict(
             user=user,
             timeline=timeline_name,
             name=name,
             time=time,
+            note=None
         )
 
 
-    def _build_event(self, user, timeline_name, name, start, end):
+    def _build_dash(self, user, timeline_name, name, start, end, note=None):
         '''Helper function for building an event object to be saved to the
            database.
 
@@ -71,7 +74,9 @@ class Model(object):
            @param start : datetime
                the start time of the activity, in UTC
            @param end : datetime
-               the end time of the activity, in UTC'''
+               the end time of the activity, in UTC
+           @param note : optional, str
+               an optional note to attach to the dash'''
 
         data = dict(
             user=user,
@@ -79,11 +84,12 @@ class Model(object):
             name=name,
             start=start,
             end=end,
+            note=None
         )
 
         return data
     
-    def _build_pending(self, user, timeline_name, name, start):
+    def _build_pending(self, user, timeline_name, name, start, note=None):
         '''Helper function for building a pending object to be saved to the 
            database.
 
@@ -94,13 +100,16 @@ class Model(object):
            @param name : str
                the name of the activity to create
            @param start : datetime
-               the start time of the activity, in UTC'''
+               the start time of the activity, in UTC
+           @param note : optional, str
+               an optional note to attach to the dash'''
         
         data = dict(
             user=user,
             timeline=timeline_name,
             name=name,
             start=start,
+            note=None
         )
 
         return data
@@ -186,7 +195,7 @@ class Model(object):
         if time is None:
             time = datetime.datetime.utcnow()
 
-        dot = self._build_dot(user, timeline_name, name, time)
+        dot = self._build_dot(user, timeline_name, name, time, note=note)
         self.db.dots.insert(dot)
         
         return dot
@@ -283,7 +292,7 @@ class Model(object):
 
         return self.object_by_id(user, _id, 'dashes')
 
-    def dash(self, user, timeline_name, name, start=None, end=None, **kwargs):
+    def dash(self, user, timeline_name, name, start=None, end=None, note=None):
         '''Log the occurence of a ranged activity to the specified timeline.
 
            @param user : str
@@ -295,7 +304,9 @@ class Model(object):
            @param start : optional, datetime
                the start time of the activity, defaults to now
            @param end : optional, datetime
-               the end time of the activity, defaults to start'''
+               the end time of the activity, defaults to start
+           @param note : optional, str
+               an optional note to go with the dash'''
 
         if start is None:
             start = datetime.datetime.utcnow()
@@ -303,26 +314,34 @@ class Model(object):
         if end is None:
             end = start
 
-        union = kwargs.get('union', True)
+        dash = self._build_dash(user, timeline_name, name, start, end, note=note)
 
-        dash = self._build_event(user, timeline_name, name, start, end)
+        extra_criteria = {
+            'timeline' : timeline_name,
+            'name' : name
+        }
+        overlapping_dashes = self.overlapping_dashes(user, start, end, **extra_criteria)
 
-        if union:
-            extra_criteria = {
-                'timeline' : timeline_name,
-                'name' : name
-            }
-            overlapping_activities = self.overlapping_dashes(user, start, end, **extra_criteria)
+        if overlapping_dashes:
+            # consolidate all the overlapping activities into one
+            # preserve the id of the first activity
+            dash['_id'] = overlapping_dashes[0]['_id']
+            dash['start'] = min(start, *(a['start'] for a in overlapping_dashes))
+            dash['end'] = max(end, *(a['end'] for a in overlapping_dashes))
 
-            if overlapping_activities:
-                # consolidate all the overlapping activities into one
-                # preserve the id of the first activity
-                dash['_id'] = overlapping_activities[0]['_id']
-                dash['start'] = min(start, *(a['start'] for a in overlapping_activities))
-                dash['end'] = max(end, *(a['end'] for a in overlapping_activities))
+            # concatenate all of the non None notes
+            notes = list()
+            if note:
+                notes.append(note)
 
-                for a in overlapping_activities:
-                    self.db.dashes.remove(a)
+            for a in overlapping_dashes:
+                _note = a.get('note')
+                if _note:
+                    notes.append(_note)
+                self.db.dashes.remove(a)
+
+            if notes:
+                dash['note'] = '\n\n'.join(notes)
 
         self.db.dashes.save(dash)
         return dash
@@ -420,7 +439,7 @@ class Model(object):
 
         return self.object_by_id(user, _id, 'pendings')
 
-    def pending(self, user, timeline_name, name, time=None):
+    def pending(self, user, timeline_name, name, time=None, note=None):
         '''Log the beginning of a ranged activity to the specified timeline.
 
            @param user : str
@@ -430,7 +449,9 @@ class Model(object):
            @param name : str
                name of the activity
            @param time : optional, datetime
-               the start/end time of the activity, defaults to now'''
+               the start/end time of the activity, defaults to now
+           @param note : optional, str
+               an optional note to attach to the pending'''
 
         # look for an existing pending first
         pending = self.db.pendings.find_one({
@@ -451,7 +472,7 @@ class Model(object):
             if time is None:
                 time = datetime.datetime.utcnow()
 
-            pending = self._build_pending(user, timeline_name, name, time)
+            pending = self._build_pending(user, timeline_name, name, time, note=note)
             self.db.pendings.insert(pending)
 
             return pending
