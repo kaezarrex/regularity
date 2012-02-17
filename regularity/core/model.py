@@ -153,6 +153,29 @@ class Model(object):
         self.db.users.insert(user)
         return user
 
+    def dot(self, user, timeline_name, name, time=None, note=None):
+        '''Log the occurence of an instaneous activity to the specified
+           timeline.
+
+           @param user : str
+               the name of the user to which the event belongs
+           @param timeline_name : str
+               name of the timeline
+           @param name : str
+               name of the activity
+           @param time : optional, datetime
+               the time of the activity, defaults to now
+           @param note : optional, str
+               a note to attach to the dot'''
+
+        if time is None:
+            time = datetime.datetime.utcnow()
+
+        dot = self._build_dot(user, timeline_name, name, time, note=note)
+        self.db.dots.insert(dot)
+        
+        return dot
+
     def update_dot(self, user, dot):
         '''Update the dot in the database.
 
@@ -179,28 +202,18 @@ class Model(object):
 
         return self.object_by_id(user, _id, 'dots')
 
-    def dot(self, user, timeline_name, name, time=None, note=None):
-        '''Log the occurence of an instaneous activity to the specified
-           timeline.
+    def delete_dot(self, user, object_id):
+        '''Delete the dot dot with object_id that belongs to the user.
 
            @param user : str
-               the name of the user to which the event belongs
-           @param timeline_name : str
-               name of the timeline
-           @param name : str
-               name of the activity
-           @param time : optional, datetime
-               the time of the activity, defaults to now
-           @param note : optional, str
-               a note to attach to the dot'''
+               the id of the user that owns the dot
+           @param object_id : str|objectid.ObjectId
+               the id of the dot to be deleted'''
 
-        if time is None:
-            time = datetime.datetime.utcnow()
+        dot = self.object_by_id(user, object_id, 'dots')
 
-        dot = self._build_dot(user, timeline_name, name, time, note=note)
-        self.db.dots.insert(dot)
-        
-        return dot
+        if dot:
+            self.db.dots.remove(dot)
 
     def dots(self, user, **kwargs):
         '''Perform a general query for dots. By default, will return all events 
@@ -347,6 +360,19 @@ class Model(object):
 
         self.db.dashes.save(dash)
         return dash
+
+    def delete_dash(self, user, object_id):
+        '''Delete the dash with object_id that belongs to the user.
+
+           @param user : str
+               the id of the user that owns the dash
+           @param object_id : str|objectid.ObjectId
+               the id of the dash to be deleted'''
+
+        dash = self.object_by_id(user, object_id, 'dashes')
+
+        if dash:
+            self.db.dashes.remove(dash)
 
     def dashes(self, user, **kwargs):
         '''Perform a general query for dashes. By default, will return all
