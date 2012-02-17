@@ -499,7 +499,7 @@ class Model(object):
 
             return dash
 
-    def cancel_pending(self, user, timeline_name, name):
+    def cancel_pending(self, user, object_id):
         '''Cancel a pending that hasn't been completed yet.
 
            @param user : str
@@ -509,11 +509,7 @@ class Model(object):
            @param name : str
                name of the activity'''
 
-        pending = self.db.pendings.find_one({
-            'user' : user,
-            'timeline' : timeline_name,
-            'name' : name,
-        })
+        pending = self.object_by_id(user, object_id, 'pendings')
 
         if pending is not None:
             self.db.pendings.remove(pending)
