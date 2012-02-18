@@ -51,7 +51,7 @@ class RegularityDaemon(object):
             return application
 
         except dbus.DBusException:
-            logging.error("Could not resolve application path '%s' to a name")
+            logging.error("Could not resolve application path '%s' to a name" % path)
 
 
 
