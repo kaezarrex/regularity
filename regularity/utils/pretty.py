@@ -1,4 +1,4 @@
-from itertools import ifilter, imap, izip
+from itertools import ifilter, imap, islice, izip
 from operator import itemgetter
 
 def unitize_value(value, unit, default=None):
@@ -17,11 +17,13 @@ def unitize_value(value, unit, default=None):
 
     return '%s %s' % (value, unit)
 
-def timedelta(td):
+def timedelta(td, n=None):
     '''Return a string representation of a duration.
 
        @param td : timedelta
-           the duration to convert to a string'''
+           the duration to convert to a string
+       @param n : optional, int
+           only return the first n non zero components'''
 
     remainder = td.total_seconds()
 
@@ -36,6 +38,10 @@ def timedelta(td):
 
     components = izip(components, units)
     components = ifilter(itemgetter(0), components)
+
+    if n:
+        components = islice(components, n)
+
     components = list(unitize_value(c, u, 0) for c, u in components)
 
     if components:
