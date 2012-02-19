@@ -1,7 +1,10 @@
+import datetime
 import unittest
 
-from regularity.core.validation import DictField, ListField, IntField, StringField, InvalidTypeError, NullValueError, Validator, ValidationError
-from regularity.core.validation.base import Field
+from regularity.core.validation import \
+    DateTimeField, DictField, ListField, IntField, StringField, \
+    InvalidTypeError, NullValueError, Validator, ValidationError
+from regularity.core.validation.fields import Field
 
 class TestField(unittest.TestCase):
 
@@ -17,52 +20,14 @@ class TestField(unittest.TestCase):
         self.assertRaises(InvalidTypeError, f._process, 5.4)
         self.assertEquals(5, f._process(5))
 
-class TestIntField(unittest.TestCase):
-
-    def test_clean(self):
-        
-        f = IntField()
-
-        self.assertRaises(ValidationError, f.process, '')
-        self.assertRaises(ValidationError, f.process, '  ')
-        self.assertRaises(ValidationError, f.process, 'abc')
-        self.assertRaises(ValidationError, f.process, ' abc ')
-
-        self.assertEquals(5, f.process(5))
-        self.assertEquals(5, f.process('5'))
-
-class TestStringField(unittest.TestCase):
+class TestDateTimeField(unittest.TestCase):
 
     def test_process(self):
         
-        f = StringField(length=4)
+        f = DateTimeField()
 
-        self.assertRaises(ValidationError, f.process, 'abcde')
-
-        self.assertEquals('', f.process(''))
-        self.assertEquals('', f.process('     '))
-        self.assertEquals('abcd', f.process('abcd'))
-        self.assertEquals('abcd', f.process('   abcd   '))
-
-class TestListField(unittest.TestCase):
-
-    def test_process(self):
-
-        f1 = ListField(StringField(required=True))
-        f2 = ListField(StringField(required=False))
-
-        self.assertRaises(ValidationError, f1.process, [])
-        self.assertEquals([], f2.process([]))
-
-        f3 = ListField(StringField(null=False))
-        f4 = ListField(StringField(null=True))
-
-        self.assertRaises(NullValueError, f3.process, [None])
-        self.assertRaises(NullValueError, f3.process, ['a', 'b', None])
-
-        self.assertEquals(['a', 'b', 'c'], f3.process(['a', 'b', 'c']))
-        self.assertEquals(['a', 'b', 'c'], f4.process(['a', 'b', 'c']))
-        self.assertEquals(['a', None, 'b', None, 'c'], f4.process(['a', None, 'b', None, 'c']))
+        now = datetime.datetime.utcnow()
+        self.assertEquals(now, f.process(now))
 
 class TestDictField(unittest.TestCase):
 
@@ -87,6 +52,53 @@ class TestDictField(unittest.TestCase):
         self.assertRaises(ValidationError, f.process, v5)
         self.assertRaises(ValidationError, f.process, v6)
 
+class TestIntField(unittest.TestCase):
+
+    def test_process(self):
+        
+        f = IntField()
+
+        self.assertRaises(ValidationError, f.process, '')
+        self.assertRaises(ValidationError, f.process, '  ')
+        self.assertRaises(ValidationError, f.process, 'abc')
+        self.assertRaises(ValidationError, f.process, ' abc ')
+
+        self.assertEquals(5, f.process(5))
+        self.assertEquals(5, f.process('5'))
+
+class TestListField(unittest.TestCase):
+
+    def test_process(self):
+
+        f1 = ListField(StringField(required=True))
+        f2 = ListField(StringField(required=False))
+
+        self.assertRaises(ValidationError, f1.process, [])
+        self.assertEquals([], f2.process([]))
+
+        f3 = ListField(StringField(null=False))
+        f4 = ListField(StringField(null=True))
+
+        self.assertRaises(NullValueError, f3.process, [None])
+        self.assertRaises(NullValueError, f3.process, ['a', 'b', None])
+
+        self.assertEquals(['a', 'b', 'c'], f3.process(['a', 'b', 'c']))
+        self.assertEquals(['a', 'b', 'c'], f4.process(['a', 'b', 'c']))
+        self.assertEquals(['a', None, 'b', None, 'c'], f4.process(['a', None, 'b', None, 'c']))
+
+class TestStringField(unittest.TestCase):
+
+    def test_process(self):
+        
+        f = StringField(length=4)
+
+        self.assertRaises(ValidationError, f.process, 'abcde')
+
+        self.assertEquals('', f.process(''))
+        self.assertEquals('', f.process('     '))
+        self.assertEquals('abcd', f.process('abcd'))
+        self.assertEquals('abcd', f.process('   abcd   '))
+
 class TestValidator(unittest.TestCase):
 
     def test_initialization(self):
@@ -107,4 +119,5 @@ class TestValidator(unittest.TestCase):
             age = '25'
         )
 
+        self.assertEqual({'name' : 'Tim', 'age' : 25}, TestForm.validate(data))
         self.assertEqual({'name' : 'Tim', 'age' : 25}, form.validate(data))

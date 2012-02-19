@@ -1,3 +1,7 @@
+import datetime
+
+class ValidationError(Exception): 
+    pass
 
 class InvalidTypeError(Exception):
 
@@ -6,10 +10,13 @@ class InvalidTypeError(Exception):
         self.value = value
         self.type = type_
 
-class NullValueError(Exception): 
+class BadKeyError(Exception):
     pass
 
-class ValidationError(Exception): 
+class MissingKeyError(Exception):
+    pass
+
+class NullValueError(Exception): 
     pass
 
 class Field(object):
@@ -148,3 +155,12 @@ class StringField(Field):
             raise ValidationError('string is too long')
 
         return value
+
+class DateTimeField(Field):
+
+    def __init__(self, **kwargs):
+        '''Initialize a DateTimeField.'''
+
+        super(DateTimeField, self).__init__(datetime.datetime, **kwargs)
+
+

@@ -1,5 +1,5 @@
 
-from base import DictField, Field
+from fields import DictField, Field
 
 class ValidatorMeta(type):
 
@@ -15,7 +15,8 @@ class ValidatorMeta(type):
                 attrs[key] = value
 
         form = DictField(form_fields, required=True, null=False)
-        def validate(self, data):
+        @staticmethod
+        def validate(data):
             return form.process(data)
 
         attrs['validate'] = validate
