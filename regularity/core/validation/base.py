@@ -15,7 +15,7 @@ class ValidationError(Exception):
 class Field(object):
     '''Base class for the various fields.'''
 
-    def __init__(self, type_, required=False, null=True):
+    def __init__(self, type_, required=True, null=False):
         '''Create the field validator.
 
            @param type_ : type|tuple(type)
@@ -80,7 +80,7 @@ class DictField(Field):
         # find any keys that aren't in the spec
         bad_keys = keys.difference(field_keys)
         if bad_keys:
-            raise ValdationError('the following keys do not belong to the spec: %s' % ', '.join(bad_keys))
+            raise ValidationError('the following keys do not belong to the spec: %s' % ', '.join(bad_keys))
 
         # find any missing required keys
         missing_keys = required_keys.difference(keys)
@@ -148,4 +148,3 @@ class StringField(Field):
             raise ValidationError('string is too long')
 
         return value
-

@@ -1,6 +1,6 @@
 import unittest
 
-from regularity.core.validation import DictField, ListField, IntField, StringField, InvalidTypeError, NullValueError, ValidationError
+from regularity.core.validation import DictField, ListField, IntField, StringField, InvalidTypeError, NullValueError, Validator, ValidationError
 from regularity.core.validation.base import Field
 
 class TestField(unittest.TestCase):
@@ -77,8 +77,34 @@ class TestDictField(unittest.TestCase):
         v2 = dict(name=25, age=25)
         v3 = dict(name='Tim', age='Tim')
         v4 = dict(name='Tim', age=25)
+        v5 = dict(age=25)
+        v6 = dict(name='Tim', age=25, extra='fail')
 
         self.assertEquals(dict(name='Tim'), f.process(v1))
         self.assertRaises(InvalidTypeError, f.process, v2)
         self.assertRaises(ValidationError, f.process, v3)
         self.assertEquals(dict(name='Tim', age=25), f.process(v4))
+        self.assertRaises(ValidationError, f.process, v5)
+        self.assertRaises(ValidationError, f.process, v6)
+
+class TestValidator(unittest.TestCase):
+
+    def test_initialization(self):
+
+        class TestForm(Validator):
+            
+            name = StringField()
+            age = IntField()
+            
+        self.assertNotIn('name', TestForm.__dict__)
+        self.assertNotIn('age', TestForm.__dict__)
+        self.assertIn('validate', TestForm.__dict__)
+
+        form = TestForm()
+
+        data = dict(
+            name = '   Tim ',
+            age = '25'
+        )
+
+        self.assertEqual({'name' : 'Tim', 'age' : 25}, form.validate(data))
