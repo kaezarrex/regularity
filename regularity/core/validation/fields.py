@@ -1,23 +1,31 @@
 import datetime
 
 class ValidationError(Exception): 
-    pass
+    '''The error that gets raised externally when data does not validate'''
 
 class InvalidTypeError(Exception):
+    '''The error that gets raised when a value has an illegal type'''
 
     def __init__(self, value, type_, **kwargs):
+        '''Create the InvalidTypeError.
+
+           @param value : object
+               the value that is illegal
+           @param type_ : type|tuple(type)
+               the valid types for that value'''
+
         super(InvalidTypeError, self).__init__(**kwargs)
         self.value = value
         self.type = type_
 
 class BadKeyError(Exception):
-    pass
+    '''The error that gets raised when a key is in the data that doesn't belong'''
 
 class MissingKeyError(Exception):
-    pass
+    '''The error that gets raised when a required key is missing'''
 
 class NullValueError(Exception): 
-    pass
+    '''The error that gets raised when a non-null value is null'''
 
 class Field(object):
     '''Base class for the various fields.'''
@@ -39,6 +47,12 @@ class Field(object):
         self.null = null
 
     def _process(self, value):
+        '''Perfom null validation and type validation, then hand the value off
+           to the subclass' implementation of process for extra validation.
+
+           @param value : object
+               the object to process'''
+
         # check if the value is None and throw an error if this is not allowed
         if value is None:
             if not self.null:
@@ -53,15 +67,20 @@ class Field(object):
         return self.process(value)
 
     def process(self, value):
+        '''The identity function, meant to be subclassed for extra validation.'''
+
         return value
 
 class DictField(Field):
+    '''A field that validates a dictionary'''
 
     def __init__(self, subfields, **kwargs):
         '''Initialize the DictField.
 
-           @param data : dict
-               the dict to clean and validate'''
+           @param subfields : dict
+               a mapping from str -> Field
+           @param kwargs : keyword arguments
+               arguments to pass on to the super class'''
         
         super(DictField, self).__init__(dict, **kwargs)
 
@@ -95,6 +114,12 @@ class DictField(Field):
             raise ValidationError('the following required keys are missing: %s' % ', '.join(missing_keys))
 
     def process(self, value):
+        '''Ensure the required keys are present, and that no extra keys are 
+           present, then iterate through each key and validate it separately.
+
+           @param value : dict
+               the value to process'''
+
         self._validate_keys_(value.iterkeys())
 
         for key in value.iterkeys():
@@ -104,15 +129,27 @@ class DictField(Field):
         return value
 
 class ListField(Field):
+    '''A field that validates lists'''
 
     def __init__(self, subfield, **kwargs):
-        '''Initialize a ListField.'''
+        '''Initialize a ListField.
+        
+           @param subfield : Field
+               the field type for each element in the list
+           @param kwargs : keyword arguments
+               arguments to pass on to the super class'''
 
         super(ListField, self).__init__(list, **kwargs)
 
         self.subfield = subfield
 
     def process(self, value):
+        '''Iterate through each item in the list and verify that each one 
+           validates.
+
+           @param value : list
+               the list to process'''
+
         if 0 == len(value) and self.subfield.required:
             raise ValidationError('list must contain at least one value')
 
@@ -124,13 +161,22 @@ class ListField(Field):
         return processed_values
 
 class IntField(Field):
+    '''A field that validates integers'''
 
     def __init__(self, **kwargs):
-        '''Initialize an IntField.'''
+        '''Initialize an IntField.
+
+           @param kwargs : keyword arguments
+               arguments to pass on to the super class'''
 
         super(IntField, self).__init__((int, basestring), **kwargs)
 
     def process(self, value):
+        '''Attempt to convert the value to an int.
+
+           @param value : str|int
+               the value to attempt to convert'''
+
         try:
             return int(value)
         except ValueError:
@@ -138,18 +184,27 @@ class IntField(Field):
         raise ValidationError('could not convert %s to int' % value)
 
 class StringField(Field):
+    '''A field that validates strings'''
 
     def __init__(self, length=None, **kwargs):
         '''Initialize a StringField.
 
            @param length : optional, int
-               the maximum length this field can be'''
+               the maximum length this field can be
+           @param kwargs : keyword arguments
+               arguments to pass on to the super class'''
 
         super(StringField, self).__init__(basestring, **kwargs)
 
         self.length = length
 
     def process(self, value):
+        '''Valdate the length of the string does not exceed the maximum, if it
+           is set.
+
+           @param value : str
+               the string to validate'''
+
         value = value.strip()
         if self.length is not None and len(value) > self.length:
             raise ValidationError('string is too long')
@@ -157,9 +212,13 @@ class StringField(Field):
         return value
 
 class DateTimeField(Field):
+    '''A field that validates datetimes'''
 
     def __init__(self, **kwargs):
-        '''Initialize a DateTimeField.'''
+        '''Initialize a DateTimeField.
+           
+           @param kwargs : keyword arguments
+               arguments to pass on to the super class'''
 
         super(DateTimeField, self).__init__(datetime.datetime, **kwargs)
 
