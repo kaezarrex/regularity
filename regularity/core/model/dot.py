@@ -15,7 +15,7 @@ class Dot(Validator):
     time     = DateTimeField()
     note     = StringField(null=True)
 
-class DotAPI(object):
+class DotAPI(APIBase):
 
     @property
     def collection(self):

@@ -4,14 +4,14 @@ from regularity.core.validation import StringField, Validator
 from base import APIBase, validate
 from fields import ObjectIdField
 
-class User(Validator)
+class User(Validator):
     '''The validator for user objects'''
 
     _id = ObjectIdField()
     email = StringField()
     password = StringField()
 
-class UserAPI(object):
+class UserAPI(APIBase):
 
     @property
     def collection(self):

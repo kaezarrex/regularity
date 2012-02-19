@@ -1,3 +1,4 @@
+import pymongo.objectid
 
 class ItemNotFound(Exception):
     '''An exception for when a requested database item does not exist'''

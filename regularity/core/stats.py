@@ -10,6 +10,9 @@ def _mean(args):
        @param args : list(int|float)
           the list of numbers to compute the mean for'''
     
+    if not args:
+        return None
+
     return sum(imap(float, args)) / len(args) 
 
 
@@ -18,6 +21,11 @@ def _std(args, return_mean=False):
        
        @param args : list(int|float)
            the list of numbers to compute the standard deviation for'''
+
+    if not args:
+        if return_mean:
+            return None, None
+        return None
     
     mean = _mean(args)
 
@@ -92,8 +100,11 @@ class RegularityStatistics(object):
 
         mean, std = _std(durations, return_mean=True)
 
-        mean = datetime.timedelta(seconds=mean)
-        std = datetime.timedelta(seconds=std)
+        if mean is not None:
+            mean = datetime.timedelta(seconds=mean)
+
+        if std is not None:
+            std = datetime.timedelta(seconds=std)
 
         return dict(
             mean=mean,

@@ -1,4 +1,4 @@
-import pymongo.objectid.ObjectId
+import pymongo.objectid
 
 from regularity.core.validation.fields import Field
 

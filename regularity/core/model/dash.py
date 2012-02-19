@@ -16,7 +16,7 @@ class Dash(Validator):
     end      = DateTimeField()
     note     = StringField(null=True)
 
-class DashAPI(object):
+class DashAPI(APIBase):
 
     CONTIGUITY_THRESHOLD = 5 # seconds
 

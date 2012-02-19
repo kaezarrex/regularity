@@ -2,6 +2,11 @@ import datetime
 
 import pymongo
 
+from user import UserAPI
+from dot import DotAPI
+from dash import DashAPI
+from pending import PendingAPI
+
 class Model(object):
     '''The container class for the sub models'''
 

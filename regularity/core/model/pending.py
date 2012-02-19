@@ -14,7 +14,7 @@ class Pending(Validator):
     start    = DateTimeField()
     note     = StringField(null=True)
 
-class DotAPI(object):
+class PendingAPI(APIBase):
 
     @property
     def collection(self):
