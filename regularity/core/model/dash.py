@@ -1,3 +1,6 @@
+import datetime
+import re
+
 import pymongo.objectid
 
 from regularity.core.validation import DateTimeField, StringField, Validator
@@ -9,7 +12,7 @@ class Dash(Validator):
     '''The validator for dash objects'''
 
     _id      = ObjectIdField()
-    user     = StringField()
+    user     = ObjectIdField()
     timeline = StringField(null=True)
     name     = StringField()
     start    = DateTimeField()
@@ -103,7 +106,7 @@ class DashAPI(APIBase):
         return dash
 
     @validate(Dash)
-    def delete_dash(self, dash):
+    def delete(self, dash):
         '''Delete the dash with object_id that belongs to the user.
 
            @param dash : dict

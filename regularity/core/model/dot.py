@@ -1,3 +1,6 @@
+import datetime
+import re
+
 import pymongo.objectid
 
 from regularity.core.validation import DateTimeField, StringField, Validator
@@ -9,7 +12,7 @@ class Dot(Validator):
     '''The validator for dot objects'''
 
     _id      = ObjectIdField()
-    user     = StringField()
+    user     = ObjectIdField()
     timeline = StringField(null=True)
     name     = StringField()
     time     = DateTimeField()

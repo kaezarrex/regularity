@@ -23,7 +23,7 @@ def validate(validator):
     def decorator(fn):
         def wrapper(self, data):
             data = validator.validate(data)
-            return self.fn(data)
+            return fn(self, data)
 
         return wrapper
 
@@ -62,7 +62,7 @@ class APIBase(object):
                an object claiming to be a document in the database'''
 
         _id = item.get('_id')
-        user = item('user')
+        user = item.get('user')
 
         obj = self.object_by_id(user, _id) 
         
@@ -75,10 +75,13 @@ class APIBase(object):
         '''Get the object belonging to the specified user and having the 
            specified id.
 
-           @param user : str
+           @param user : str|pymongo.objectid.ObjectId
                the id of the user the object belongs to
-           @param object_id : pymongo.objectid.ObjectId
+           @param object_id : str|pymongo.objectid.ObjectId
                the id of the object'''
+
+        user = self.object_id(user)
+        object_id = self.object_id(object_id)
 
         criteria = {
             '_id' : object_id,

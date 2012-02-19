@@ -11,7 +11,7 @@ class ObjectIdField(Field):
            @param kwargs : keyword arguments
                arguments to pass on to the super class'''
 
-        super(ObjectIdField, self).__init__((str, pymongo.objectid.ObjectId))
+        super(ObjectIdField, self).__init__((str, pymongo.objectid.ObjectId), **kwargs)
 
     def process(self, value):
         '''Attempt to convert the value into an ObjectId

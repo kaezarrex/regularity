@@ -37,26 +37,26 @@ class Model(object):
         self.dashes = DashAPI(db)
         self.pendings = PendingAPI(db)
 
-    def finish_pending(self, pending, time=None):
+    def finish_pending(self, pending, end=None):
         '''Finish a pending, and move it to the dashes collection.
 
            @param pending : dict
                the pending to finish
-           @param time : optional, datetime.datetime
+           @param end : optional, datetime.datetime
                the end time of the pending, defaults to now'''
 
-        if time is None:
-            time = datetime.datetime.utcnow()
+        if end is None:
+            end = datetime.datetime.utcnow()
 
         pending = self.pendings.verify(pending)
-        self.pendings.remove(pending)
+        self.pendings.delete(pending)
 
         dash = self.dashes.create(
             pending['user'], 
             pending['timeline'], 
             pending['name'], 
             pending['start'], 
-            time=time, 
+            end=end, 
             note=pending.get('note')
         )
         

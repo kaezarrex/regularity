@@ -1,3 +1,6 @@
+import datetime
+import re
+
 import pymongo.objectid
 
 from regularity.core.validation import DateTimeField, StringField, Validator
@@ -8,7 +11,7 @@ from fields import ObjectIdField
 class Pending(Validator):
 
     _id      = ObjectIdField()
-    user     = StringField()
+    user     = ObjectIdField()
     timeline = StringField(null=True)
     name     = StringField()
     start    = DateTimeField()
@@ -22,7 +25,7 @@ class PendingAPI(APIBase):
 
         return self.db.pendings
 
-    def create(self, user, timeline, name, time=None, note=None):
+    def create(self, user, timeline, name, start=None, note=None):
         '''Log the beginning of a ranged activity, where the end time is yet to
            be determined, to the specified timeline.
 
@@ -32,15 +35,15 @@ class PendingAPI(APIBase):
                name of the timeline
            @param name : str
                name of the activity
-           @param time : optional, datetime
+           @param start : optional, datetime
                the start time of the activity, defaults to now
            @param note : optional, str
                an optional note to attach to the pending'''
 
         user = self.object_id(user)
 
-        if time is None:
-            time = datetime.datetime.utcnow()
+        if start is None:
+            start = datetime.datetime.utcnow()
 
         pending = dict(
             user=user,
