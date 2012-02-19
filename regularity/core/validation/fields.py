@@ -3,29 +3,8 @@ import datetime
 class ValidationError(Exception): 
     '''The error that gets raised externally when data does not validate'''
 
-class InvalidTypeError(Exception):
-    '''The error that gets raised when a value has an illegal type'''
-
-    def __init__(self, value, type_, **kwargs):
-        '''Create the InvalidTypeError.
-
-           @param value : object
-               the value that is illegal
-           @param type_ : type|tuple(type)
-               the valid types for that value'''
-
-        super(InvalidTypeError, self).__init__(**kwargs)
-        self.value = value
-        self.type = type_
-
-class BadKeyError(Exception):
-    '''The error that gets raised when a key is in the data that doesn't belong'''
-
-class MissingKeyError(Exception):
-    '''The error that gets raised when a required key is missing'''
-
-class NullValueError(Exception): 
-    '''The error that gets raised when a non-null value is null'''
+    def __init__(self, *args):
+        super(ValidationError, self).__init__(*args)
 
 class Field(object):
     '''Base class for the various fields.'''
@@ -46,6 +25,29 @@ class Field(object):
         self.required = required
         self.null = null
 
+        # the name of the field will be set by the Validator class
+        self.name = None
+
+    def set_name(self, name):
+        '''Set the name of the field, for debugging purposes.
+
+           @param name : str
+               the name for this field'''
+
+        self.name = name
+
+    def _raise_(self, message):
+        '''Raise a validation error, inserting in the name if the field if it is
+           defined.
+
+           @param message : str
+               the exception message'''
+
+        if self.name:
+            raise ValidationError('%s: %s' % (self.name, message))
+
+        raise ValidationError(message)
+
     def _process(self, value):
         '''Perfom null validation and type validation, then hand the value off
            to the subclass' implementation of process for extra validation.
@@ -56,13 +58,13 @@ class Field(object):
         # check if the value is None and throw an error if this is not allowed
         if value is None:
             if not self.null:
-                raise NullValueError
+                self._raise_('value cannot be null')
 
             return None
 
         else:
             if not isinstance(value, self.type):
-                raise InvalidTypeError(value, self.type)
+                self._raise_('invalid type: %s (should be %s)' % (type(value), self.type))
 
         return self.process(value)
 
@@ -86,6 +88,18 @@ class DictField(Field):
 
         self.subfields = subfields
 
+    def set_name(self, name):
+        '''Override the super method, also recursively setting the name of 
+           subfields.
+
+           @param name : str 
+               the name for this field'''
+
+        super(DictField, self).set_name(name)
+
+        for key, value in self.subfields.iteritems():
+            value.set_name('%s.%s' % (name, key))
+
     def _validate_keys_(self, keys):
         '''Determine if the keys passed in are valid. They are invalid if they
            not a subset of the spec keys or they are missing a required key.
@@ -106,12 +120,12 @@ class DictField(Field):
         # find any keys that aren't in the spec
         bad_keys = keys.difference(field_keys)
         if bad_keys:
-            raise ValidationError('the following keys do not belong to the spec: %s' % ', '.join(bad_keys))
+            self._raise_('the following keys do not belong to the spec: %s' % ', '.join(bad_keys))
 
         # find any missing required keys
         missing_keys = required_keys.difference(keys)
         if missing_keys:
-            raise ValidationError('the following required keys are missing: %s' % ', '.join(missing_keys))
+            self._raise_('the following required keys are missing: %s' % ', '.join(missing_keys))
 
     def process(self, value):
         '''Ensure the required keys are present, and that no extra keys are 
@@ -143,6 +157,15 @@ class ListField(Field):
 
         self.subfield = subfield
 
+    def set_name(self, name):
+        '''Override the super method, also setting the name of the subfield.
+
+           @param name : str 
+               the name for this field'''
+
+        super(ListField, self).set_name(name)
+        self.subfield.set_name('%s.element' % name)
+
     def process(self, value):
         '''Iterate through each item in the list and verify that each one 
            validates.
@@ -151,7 +174,7 @@ class ListField(Field):
                the list to process'''
 
         if 0 == len(value) and self.subfield.required:
-            raise ValidationError('list must contain at least one value')
+            self._raise_('list cannot be empty, because the subfield was defined as required')
 
         processed_values = list()
         for i in xrange(len(value)):
@@ -181,7 +204,7 @@ class IntField(Field):
             return int(value)
         except ValueError:
             pass
-        raise ValidationError('could not convert %s to int' % value)
+        self._raise_('could not convert %s to int' % value)
 
 class StringField(Field):
     '''A field that validates strings'''
@@ -207,7 +230,7 @@ class StringField(Field):
 
         value = value.strip()
         if self.length is not None and len(value) > self.length:
-            raise ValidationError('string is too long')
+            self._raise_('string is longer than %d characters: %s' % (self.length, value))
 
         return value
 

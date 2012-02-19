@@ -11,18 +11,24 @@ class ValidatorMeta(type):
         attrs = dict()
         form_fields = dict()
 
+        # iterate through the attributes in the class definition
         for key, value in _attrs.iteritems():
+
             if isinstance(value, Field):
+                # set the name of the field, based on its name in the class
+                # definition
+                value.set_name(key)
+
+                # add the field to the list of Fields
                 form_fields[key] = value
+
             else:
+                # it is not a field, include it in the new class definition
                 attrs[key] = value
 
+        # add the validate method to the new attribute list
         form = DictField(form_fields, required=True, null=False)
-        @staticmethod
-        def validate(data):
-            return form.process(data)
-
-        attrs['validate'] = validate
+        attrs['validate'] = staticmethod(lambda d : form.process(d))
 
         return super(ValidatorMeta, cls).__new__(cls, name, parents, attrs)
 
