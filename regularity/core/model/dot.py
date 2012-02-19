@@ -8,7 +8,7 @@ from regularity.core.validation import DateTimeField, StringField, Validator
 from base import APIBase, validate
 from fields import ObjectIdField
 
-class Dot(Validator):
+class DotValidator(Validator):
     '''The validator for dot objects'''
 
     _id      = ObjectIdField()
@@ -54,13 +54,13 @@ class DotAPI(APIBase):
             time=time, 
             note=note
         )
-        dot = Dot.validate(dot)
+        dot = DotValidator.validate(dot)
 
         self.collection.insert(dot)
         
         return dot
 
-    @validate(Dot)
+    @validate(DotValidator)
     def update(self, dot):
         '''Update the dot in the database. 
         
@@ -74,7 +74,7 @@ class DotAPI(APIBase):
         self.collection.save(dot)
         return dot
 
-    @validate(Dot)
+    @validate(DotValidator)
     def delete(self, dot):
         '''Delete the dot in the database.
 

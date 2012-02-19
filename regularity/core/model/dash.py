@@ -8,7 +8,7 @@ from regularity.core.validation import DateTimeField, StringField, Validator
 from base import APIBase, validate
 from fields import ObjectIdField
 
-class Dash(Validator):
+class DashValidator(Validator):
     '''The validator for dash objects'''
 
     _id      = ObjectIdField()
@@ -93,7 +93,7 @@ class DashAPI(APIBase):
         self.collection.save(dash)
         return dash
 
-    @validate(Dash)
+    @validate(DashValidator)
     def update(self, dash):
         '''Update the dash in the database.
 
@@ -105,7 +105,7 @@ class DashAPI(APIBase):
         self.collection.save(dash)
         return dash
 
-    @validate(Dash)
+    @validate(DashValidator)
     def delete(self, dash):
         '''Delete the dash with object_id that belongs to the user.
 

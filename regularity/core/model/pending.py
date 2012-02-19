@@ -8,7 +8,7 @@ from regularity.core.validation import DateTimeField, StringField, Validator
 from base import APIBase, validate
 from fields import ObjectIdField
 
-class Pending(Validator):
+class PendingValidator(Validator):
 
     _id      = ObjectIdField()
     user     = ObjectIdField()
@@ -57,7 +57,7 @@ class PendingAPI(APIBase):
 
         return pending
 
-    @validate(Pending)
+    @validate(PendingValidator)
     def update(self, pending):
         '''Update the pending to the database.
 
@@ -69,7 +69,7 @@ class PendingAPI(APIBase):
         self.collection.save(pending)
         return pending
 
-    @validate(Pending)
+    @validate(PendingValidator)
     def delete(self, pending):
         '''Cancel a pending that hasn't been completed yet.
 
