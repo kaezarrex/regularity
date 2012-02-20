@@ -7,6 +7,7 @@ from regularity.core.validation import StringField, Validator
 from base import APIBase, validate
 from fields import ObjectIdField
 
+MIN_PASSWORD_LENGTH = 6
 N_SALT_CHARS = 16
 
 class UserAlreadyExists(Exception):
